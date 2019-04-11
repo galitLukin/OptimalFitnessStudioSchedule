@@ -25,7 +25,3 @@ temp = attendance.loc[:,['Description','Date','Start time','Staff']].drop_duplic
 print(temp.groupby('Staff').count())
 attendance = attendance.loc[:,['Date', 'Start time', 'End time', 'Description', 'Staff', 'Client ID']]
 attendance.to_csv('../Data/processed/attendance.csv', index = False)
-
-
-
-#Assumptions:
