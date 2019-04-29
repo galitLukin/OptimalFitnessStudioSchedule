@@ -87,6 +87,7 @@ function studio(model, x)
                 # every day, time, and instructor, there is at most one class type
                 @constraint(model, sum(x[d,t,c,i] for c in 1:C) <= 1)
             end
+            @constraint(model, sum(x[d,t,c,i] for c=1:C, i=1:I) <= 1)
         end
     end
 

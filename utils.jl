@@ -14,6 +14,7 @@ function visualizeSchedule(x)
             for c in 1:C
                 for i in 1:I
                     if x[d,t,c,i] == 1
+                        #println("$d,$t,$c,$i")
                         chosenClass = classes[c]
                         chosenInstructor = instructors[i]
                         schedule[t,d+1] = "$chosenClass-$chosenInstructor"
