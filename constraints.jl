@@ -81,11 +81,11 @@ function studio(model, x)
         for t in 1:T
             for c in 1:C
                 # every day, time, and class type, there is at most one instructor
-                @constraint(model, sum(x[d,t,c,i] for i=1:I) <= 1)
+                @constraint(model, sum(x[d,t,c,i] for i in 1:I) <= 1)
             end
             for i in 1:I
                 # every day, time, and instructor, there is at most one class type
-                @constraint(model, sum(x[d,t,c,i] for c=1:C) <= 1)
+                @constraint(model, sum(x[d,t,c,i] for c in 1:C) <= 1)
             end
         end
     end
@@ -94,48 +94,34 @@ function studio(model, x)
     for d in 1:D
         for t in 1:T-3
             for i in 1:I
-                for i_ in 1:I
-                    for c_ in 1:C
-                        # one and half hour classes
-                        for c in 1:4
-                            for t_ in 1:3
-                                @constraint(model, x[d,t,c,i] <= 1 - x[d,t+t_,c_,i_])
-                            end
-                        end
-                        # one hour classes
-                        for c in 5:8
-                            for c in 1:4
-                                for t_ in 1:2
-                                    @constraint(model, x[d,t,c,i] <= 1 - x[d,t+t_,c_,i_])
-                                end
-                            end
-                        end
-                    end
+                # one and half hour classes
+                for c in 1:4
+                    @constraint(model, x[d,t,c,i] + sum(x[d,t+t_,c_,i_] for t_=1:3, c_=1:C, i_=1:I) <= 1)
+                end
+                # one hour classes
+                for c in 5:8
+                    @constraint(model, x[d,t,c,i] + sum(x[d,t+t_,c_,i_] for t_=1:2, c_=1:C, i_=1:I) <= 1)
                 end
             end
         end
     end
+
+    # same as above for last classes of day
+    for d in 1:D
+        for t in 26:T-1
+            for i in 1:I
+                for c in 1:C
+                    @constraint(model, x[d,t,c,i] + sum(x[d,t+t_,c_,i_] for t_=1:T-t ,c_=1:C, i_=1:I) <= 1)
+                end
+            end
+        end
+    end
+
     # 19:30 can one be a one hour class
     for d in 1:D
         for i in 1:I
             for c in 1:4
                 @constraint(model, x[d,28,c,i] == 0)
-            end
-        end
-    end
-    # same as above for last classes of day
-    for d in 1:D
-        for t in 26:T-1
-            for i in 1:I
-                for i_ in 1:I
-                    for c_ in 1:C
-                        for c in 1:C
-                            for t_ in 1:T-t
-                                @constraint(model, x[d,t,c,i] <= 1 - x[d,t+t_,c_,i_])
-                            end
-                        end
-                    end
-                end
             end
         end
     end

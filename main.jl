@@ -58,3 +58,4 @@ end
 
 xVals, obj = _solve()
 println(obj)
+visualizeSchedule(xVals)
