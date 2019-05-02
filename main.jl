@@ -1,61 +1,27 @@
-using JuMP, JuMPeR, Gurobi, DataFrames
-using MLDataUtils
+using DataFrames, MLDataUtils
 
-include("constraints.jl")
+include("formulation.jl")
+incude("uncertainty.jl")
 include("utils.jl")
 
 D = 7
 T = 28
 C = 8
 I = 18
-A = 12
+#A = 12
 L = 10
 U = 50
 
-function _solve()
-    model = RobustModel(solver=GurobiSolver(OutputFlag=0))
-    # if scheduled or not
-    @variable(model, x[1:D,1:T,1:C,1:I], Bin)
-    @variable(model, y)
+eps = 0
+lb = 0
+ub = 10000
 
-    @objective(model, Max, y)
-    # this will be robust - comes from objective function
-    @constraint(model, y <= sum(A*x[d,t,c,i] for d=1:D, t=1:T, c=1:C, i=1:I))
-
-    # How many class types per day/week
-    classTypeOccurence(model, x)
-
-    # Instructor schedule constraints
-    instructorSchedule(model, x)
-
-    # Instructor special schedule constraints
-    instructorSpecialSchedule(model, x)
-
-    # Instructor class type constraints
-    instuctorClassType(model, x)
-
-    # studio feasibility constraints
-    studio(model, x)
-
-    # this will be robust
-    # max/min in each class
-    for d in 1:D
-        for t in 1:T
-            for c in 1:C
-                for i in 1:I
-                    @constraint(model, L*x[d,t,c,i] <= A)
-                    @constraint(model, A*x[d,t,c,i] <= U)
-                end
-            end
-        end
-    end
-
-    solve(model)
-    xVals = getvalue(x)
-    objective = getobjectivevalue(model)
-    return xVals, objective
+# A is a vector of uncertainty matrices
+A = firstUncertainty()
+while ub - lb > eps
+    x, lb = getSchedule(A)
+    ub, R = worstCase(x,A)
+    append(A,R)
 end
-
-xVals, obj = _solve()
-println(obj)
-visualizeSchedule(xVals)
+println(ub)
+visualizeSchedule(x)
