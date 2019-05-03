@@ -70,6 +70,9 @@ def removeOutlierWeeks(perDate):
             weeks.append(name)
             weekDemand.append(sum(group['Client ID'].tolist()))
     plt.bar(weeks, weekDemand, align='center', alpha=0.5)
+    d = {'Week' : weeks, 'Arrivals' : weekDemand}
+    WEEK = pd.DataFrame(data=d)
+    WEEK.to_csv('../Data/processed/WEEKdemand.csv', index = False)
     #plt.show()
     return perDate
 

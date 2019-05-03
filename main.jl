@@ -24,6 +24,6 @@ A = firstUncertainty()
 #     ub, R = worstCase(x,A)
 #     append(A,R)
 #     k = k + 1
-# end
+# # end
 println(ub)
 visualizeSchedule(x)

@@ -94,63 +94,54 @@ lastWeekAttendance.at[946,'Description'] = 1
 lastWeekAttendance.at[946,'Staff'] = 12
 #######
 
-lastWeekAttendance.to_csv('../Data/processed/attendanceLastWeekIndex.csv')
+lastWeekAttendance.to_csv('../Data/output/attendanceLastWeekIndex.csv')
 
 
 #range per class
 DTCI = attendance.groupby(['StartTime','Description','Staff','WeekDay'], as_index=False).agg({"Arrivals": ["max", "min"]})
 #range per day,time
 DT = attendance.groupby(['StartTime','WeekDay'], as_index=False).agg({"Arrivals": ["max", "min"]})
+#range per day
+D = attendance.groupby(['WeekDay'], as_index=False).agg({"Arrivals": ["max", "min"]})
+#range per time
+T = attendance.groupby(['StartTime'], as_index=False).agg({"Arrivals": ["max", "min"]})
 #range per class type, instructor
 CI = attendance.groupby(['Description','Staff'], as_index=False).agg({"Arrivals": ["max", "min"]})
+#range per class type, instructor
+C = attendance.groupby(['Description'], as_index=False).agg({"Arrivals": ["max", "min"]})
 
 DTCI.columns = ["_".join(x) for x in DTCI.columns.ravel()]
 DT.columns = ["_".join(x) for x in DT.columns.ravel()]
 CI.columns = ["_".join(x) for x in CI.columns.ravel()]
+D.columns = ["_".join(x) for x in D.columns.ravel()]
+T.columns = ["_".join(x) for x in T.columns.ravel()]
+C.columns = ["_".join(x) for x in C.columns.ravel()]
 
 DTCI.to_csv('../Data/processed/DTCIdemand.csv', index = False)
 DT.to_csv('../Data/processed/DTdemand.csv', index = False)
 CI.to_csv('../Data/processed/CIdemand.csv', index = False)
+D.to_csv('../Data/processed/Ddemand.csv', index = False)
+T.to_csv('../Data/processed/Tdemand.csv', index = False)
+C.to_csv('../Data/processed/Cdemand.csv', index = False)
+WEEK = pd.read_csv('../Data/processed/WEEKdemand.csv')
 
-
-#interesting but not necessary for now
-
-# # attendance distribution over class types
-# perClassType = attendance
-# perClassType.Description = perClassType.Description.apply(lambda c: cleaning.currectClasses(c))
-# perClassType = perClassType.loc[perClassType.Description != "Filter"]
-# perClassType = perClassType.loc[:,['Description','Date','Start time','Client ID']].drop_duplicates()
-# resClassType = perClassType.groupby(['Description','Date','Start time']).count().reset_index()
-# resClassType = resClassType.loc[:,['Description','Client ID']]
-# resClassType = resClassType.groupby('Description')['Client ID'].apply(list)
-# resClassType = resClassType.to_frame().reset_index()
-# resClassType.to_csv('../Data/processed/perClassType.csv', index = False)
-#
-# # attendance distribution over instructors
-# perInstructor = attendance
-# perInstructor.Staff = perInstructor.Staff.apply(lambda instructor: cleaning.filterInstructors(instructor))
-# perInstructor = perInstructor.loc[perInstructor.Staff != "Filter"]
-# perInstructor = perInstructor.loc[:,['Date','Start time','Staff','Client ID']].drop_duplicates()
-# resInstructor = perInstructor.groupby(['Staff','Date','Start time']).count().reset_index()
-# resInstructor = resInstructor.loc[:,['Staff','Client ID']]
-# resInstructor = resInstructor.groupby('Staff')['Client ID'].apply(list)
-# resInstructor = resInstructor.to_frame().reset_index()
-# resInstructor.to_csv('../Data/processed/perIntructor.csv', index = False)
-#
-# # attendance distribution per day
-# perDay = attendance
-# perDay = perDay.loc[:,['Date','Start time','Client ID']].drop_duplicates()
-# resDay = perDay.groupby('Date').count().reset_index()
-# resDay['DayOfWeek'] = resDay['Date'].dt.day_name()
-# resDay = resDay.loc[:,['DayOfWeek','Client ID']]
-# resDay = resDay.groupby('DayOfWeek')['Client ID'].apply(list)
-# resDay = resDay.to_frame().reset_index()
-# resDay.to_csv('../Data/processed/perDay.csv', index = False)
-#
-# # attendance distriution per hour
-# perHour = attendance
-# perHour = perHour.loc[:,['Date','Start time','Client ID']].drop_duplicates()
-# resHour = perHour.groupby(['Date','Start time']).count().reset_index()
-# resHour = resHour.groupby('Start time')['Client ID'].apply(list)
-# resHour = resHour.to_frame().reset_index()
-# resHour.to_csv('../Data/processed/perHour.csv', index = False)
+#constraints = ['Weekly','Day1','Day2','Day3','Day4','Day5','Day6','Day7']
+cols = ['MinVal', 'MaxVal']
+u = pd.DataFrame(columns=cols)
+print("Weekly demand range: ", min(WEEK.Arrivals), max(WEEK.Arrivals))
+u.at['Weekly',:] = [min(WEEK.Arrivals), max(WEEK.Arrivals)]
+i=1
+for index, row in D.iterrows():
+    print("Daily demand range: ", "Day ", row.WeekDay_, row.Arrivals_max, row.Arrivals_min)
+    u.at['Day{}'.format(i),:] = [row.Arrivals_min, row.Arrivals_max]
+    i=i+1
+for index, row in CI.iterrows():
+    print("Class/Instructor demand range: ", "Class ", row.Description_, "Instructor ", row.Staff_, row.Arrivals_max, row.Arrivals_min)
+    u.at['Class{}Staff{}'.format(row.Description_,row.Staff_),:] = [row.Arrivals_min, row.Arrivals_max]
+for index, row in T.iterrows():
+    print("Time demand range: ", "Slot ", row.StartTime_, row.Arrivals_max, row.Arrivals_min)
+    u.at['Time{}'.format(row.StartTime_),:] = [row.Arrivals_min, row.Arrivals_max]
+for index, row in C.iterrows():
+    print("Class demand range: ", "Slot ", row.Description_, row.Arrivals_max, row.Arrivals_min)
+    u.at['Class{}'.format(row.Description_),:] = [row.Arrivals_min, row.Arrivals_max]
+C.to_csv('../Data/output/staticU.csv', index = False)
