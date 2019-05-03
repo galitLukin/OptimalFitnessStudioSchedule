@@ -10,7 +10,7 @@ function getSchedule(A)
 
     @objective(model, Max, y)
     # this will be robust - comes from objective function
-    @constraint(model, y <= sum(A*x[d,t,c,i] for d=1:D, t=1:T, c=1:C, i=1:I))
+    @constraint(model, y <= sum(A[d,t,c,i]*x[d,t,c,i] for d=1:D, t=1:T, c=1:C, i=1:I))
 
     # How many class types per day/week
     classTypeOccurence(model, x)
@@ -25,7 +25,7 @@ function getSchedule(A)
     instuctorClassType(model, x)
 
     # studio feasibility constraints
-    studio(model, x)
+    #studio(model, x)
 
     # this will be robust
     # max/min in each class
@@ -33,8 +33,8 @@ function getSchedule(A)
         for t in 1:T
             for c in 1:C
                 for i in 1:I
-                    @constraint(model, L*x[d,t,c,i] <= A)
-                    @constraint(model, A*x[d,t,c,i] <= U)
+                    @constraint(model, L*x[d,t,c,i] <= A[d,t,c,i])
+                    @constraint(model, A[d,t,c,i]*x[d,t,c,i] <= U)
                 end
             end
         end

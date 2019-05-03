@@ -19,12 +19,16 @@ end
 # Instructor schedule constraints
 function instructorSchedule(model, x)
     Availability = readtable("Data/input/InstructorAvailability.csv", header=true, makefactors=true)
+    #println(Availability[19,:])
     for d in 1:D
         for i in 1:I
             row = (d-1)*I + i
             for t in 1:T
                 col = t + 2
                 if Availability[row,col] == 0
+                    # if d == 5 && i == 4
+                    #     @show d, row, t, col, i
+                    # end
                     for c in 1:C
                         @constraint(model, x[d,t,c,i] == 0)
                     end
