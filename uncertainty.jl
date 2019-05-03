@@ -10,7 +10,6 @@ function firstUncertainty()
         i = lastWeekSchedule[k, :Staff]
         a[d,t,c,i] = lastWeekSchedule[k, :Arrivals]
     end
-    println(sum(a))
     return a
 end
 

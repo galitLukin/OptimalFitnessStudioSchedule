@@ -18,12 +18,12 @@ ub = 10000
 k = 1
 # A is a vector of uncertainty matrices
 A = firstUncertainty()
-while ub - lb > eps
-    x, lb = getSchedule(A)
-    println("Got schedule $k")
-    ub, R = worstCase(x,A)
-    append(A,R)
-    k = K + 1
-end
+# while ub - lb > eps
+#     x, lb = getSchedule(A)
+#     println("Got schedule $k")
+#     ub, R = worstCase(x,A)
+#     append(A,R)
+#     k = k + 1
+# end
 println(ub)
 visualizeSchedule(x)
