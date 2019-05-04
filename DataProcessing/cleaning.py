@@ -26,10 +26,12 @@ classes = ["HOT26", "HOT26FLOW", "SILENTHOT26", "HOT26+", "INFERNOHOTPILATES", "
 instructors = ["ANCIVAL,SOPHIE", "BOU-NASSIF,JASMINE", "BOUJOULIAN,RACHELLE", "CATES,SHELLEY", "EVANGELISTI,MEREDITH", "HEIRTZLER,LESLIE", "JONES,JACLYN", "LAMBERT,LUCAS", "LANSING,LUCAS", "LOVERME,KYLA", "MCGRATH,SHARON", "MONROE,KYLAH", "PHAN,STEVEN", "PIGOTT,ELLEN", "SERRANO,JIMMY", "STERN,BRIAN", "VEERAPEN,KUMAR", "WOODS,TESS"]
 weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
+
 def stripSpaces(df):
     df['Description'] = df['Description'].str.replace(" ","")
     df['Staff'] = df['Staff'].str.replace(", ",",")
     return df
+
 
 def currectClasses(c):
     if c in classDataMap.keys():
@@ -40,10 +42,12 @@ def currectClasses(c):
                 return key
     return "Filter"
 
+
 def filterInstructors(instructor):
     if instructor in instructors:
         return instructor
     return "Filter"
+
 
 def removeOutlierWeeks(perDate):
     demand = perDate['Client ID'].tolist()
@@ -76,6 +80,7 @@ def removeOutlierWeeks(perDate):
     #plt.show()
     return perDate
 
+
 def timeSlots():
     start = '06:00:00'
     prev = datetime.datetime.strptime(start, '%H:%M:%S')
@@ -86,4 +91,67 @@ def timeSlots():
         prev = t
     return times
 
-#def getSlot(t, timeSlots):
+
+def fillTimeSlots(u,T):
+    #Fill in missing timeSlots
+    pastSlots = T.StartTime_.tolist()
+    pastMax = T.Arrivals_max.tolist()
+    pastMin = T.Arrivals_min.tolist()
+    for i in range(1,29):
+        if i in pastSlots:
+            ind = pastSlots.index(i)
+            u.at['Time{}'.format(i),:] = [pastMin[ind], pastMax[ind]]
+            continue
+        prev, next = 1, 1
+        while i - prev not in pastSlots:
+            prev = prev + 1
+        ind = pastSlots.index(i - prev)
+        prev = pastSlots[ind]
+        prevMax = pastMax[ind]
+        prevMin = pastMin[ind]
+        while i + next not in pastSlots and i+next<=28:
+            next = next + 1
+        if i + next < 28:
+            ind = pastSlots.index(i + next)
+            next = pastSlots[ind]
+            nextMax = pastMax[ind]
+            nextMin = pastMin[ind]
+            ma = ( prev * nextMax + next * prevMax ) / ( prev + next )
+            mi = ( prev * nextMin + next * prevMin ) / ( prev + next )
+        else:
+            mi = prevMin
+            ma = prevMax
+        u.at['Time{}'.format(i),:] = [mi, ma]
+    return u
+
+
+def createUncertaintySet(constraintTypes):
+    D = 7
+    T = 28
+    C = 8
+    I = 18
+    title = constraintTypes.index
+    mi = constraintTypes.MinVal.tolist()
+    ma = constraintTypes.MaxVal.tolist()
+    u = pd.DataFrame(index = range(84680), columns=['D','T','C','I','MinVal','MaxVal'])
+    k = 0
+    #weekly
+    u.loc[k] = pd.Series({'D':0, 'T':0, 'C':0, 'I':0, 'MinVal':constraintTypes.loc['Weekly','MinVal'] , 'MaxVal':constraintTypes.loc['Weekly','MaxVal']})
+    k+=1
+    for d in range(1,D+1):
+        u.loc[k] = pd.Series({'D':d, 'T':0, 'C':0, 'I':0, 'MinVal':constraintTypes.loc['Day{}'.format(d),'MinVal'] , 'MaxVal':constraintTypes.loc['Day{}'.format(d),'MaxVal']})
+        k+=1
+        for t in range(1,T+1):
+            for c in range(1,C+1):
+                for i in range(1,I+1):
+                    print(d,t,c,i)
+                    ind = title.index('Time{}'.format(t))
+                    u.loc[k] = pd.Series({'D':d, 'T':t, 'C':c, 'I':i, 'MinVal':mi[ind], 'MaxVal':ma[ind]})
+                    k+=1
+                    ind = title.index('Class{}'.format(c),)
+                    u.loc[k] = pd.Series({'D':d, 'T':t, 'C':c, 'I':i, 'MinVal':mi[ind] , 'MaxVal':ma[ind]})
+                    k+=1
+                    ind = title.index('Instructor{}'.format(i))
+                    u.loc[k] = pd.Series({'D':d, 'T':t, 'C':c, 'I':i, 'MinVal':mi[ind] , 'MaxVal':ma[ind]})
+                    k+=1
+    u.to_csv('../Data/output/staticU.csv')

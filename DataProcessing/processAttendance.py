@@ -98,31 +98,35 @@ lastWeekAttendance.to_csv('../Data/output/attendanceLastWeekIndex.csv')
 
 
 #range per class
-DTCI = attendance.groupby(['StartTime','Description','Staff','WeekDay'], as_index=False).agg({"Arrivals": ["max", "min"]})
+#DTCI = attendance.groupby(['StartTime','Description','Staff','WeekDay'], as_index=False).agg({"Arrivals": ["max", "min"]})
 #range per day,time
-DT = attendance.groupby(['StartTime','WeekDay'], as_index=False).agg({"Arrivals": ["max", "min"]})
+#DT = attendance.groupby(['StartTime','WeekDay'], as_index=False).agg({"Arrivals": ["max", "min"]})
 #range per day
 D = attendance.groupby(['WeekDay'], as_index=False).agg({"Arrivals": ["max", "min"]})
 #range per time
 T = attendance.groupby(['StartTime'], as_index=False).agg({"Arrivals": ["max", "min"]})
 #range per class type, instructor
-CI = attendance.groupby(['Description','Staff'], as_index=False).agg({"Arrivals": ["max", "min"]})
+#CI = attendance.groupby(['Description','Staff'], as_index=False).agg({"Arrivals": ["max", "min"]})
 #range per class type, instructor
 C = attendance.groupby(['Description'], as_index=False).agg({"Arrivals": ["max", "min"]})
+#range per class type, instructor
+I = attendance.groupby(['Staff'], as_index=False).agg({"Arrivals": ["max", "min"]})
 
-DTCI.columns = ["_".join(x) for x in DTCI.columns.ravel()]
-DT.columns = ["_".join(x) for x in DT.columns.ravel()]
-CI.columns = ["_".join(x) for x in CI.columns.ravel()]
+#DTCI.columns = ["_".join(x) for x in DTCI.columns.ravel()]
+#DT.columns = ["_".join(x) for x in DT.columns.ravel()]
+#CI.columns = ["_".join(x) for x in CI.columns.ravel()]
 D.columns = ["_".join(x) for x in D.columns.ravel()]
 T.columns = ["_".join(x) for x in T.columns.ravel()]
 C.columns = ["_".join(x) for x in C.columns.ravel()]
+I.columns = ["_".join(x) for x in I.columns.ravel()]
 
-DTCI.to_csv('../Data/processed/DTCIdemand.csv', index = False)
-DT.to_csv('../Data/processed/DTdemand.csv', index = False)
-CI.to_csv('../Data/processed/CIdemand.csv', index = False)
+#DTCI.to_csv('../Data/processed/DTCIdemand.csv', index = False)
+#DT.to_csv('../Data/processed/DTdemand.csv', index = False)
+#CI.to_csv('../Data/processed/CIdemand.csv', index = False)
 D.to_csv('../Data/processed/Ddemand.csv', index = False)
 T.to_csv('../Data/processed/Tdemand.csv', index = False)
 C.to_csv('../Data/processed/Cdemand.csv', index = False)
+I.to_csv('../Data/processed/Idemand.csv', index = False)
 WEEK = pd.read_csv('../Data/processed/WEEKdemand.csv')
 
 #constraints = ['Weekly','Day1','Day2','Day3','Day4','Day5','Day6','Day7']
@@ -132,16 +136,21 @@ print("Weekly demand range: ", min(WEEK.Arrivals), max(WEEK.Arrivals))
 u.at['Weekly',:] = [min(WEEK.Arrivals), max(WEEK.Arrivals)]
 i=1
 for index, row in D.iterrows():
-    print("Daily demand range: ", "Day ", row.WeekDay_, row.Arrivals_max, row.Arrivals_min)
+    #print("Daily demand range: ", "Day ", row.WeekDay_, row.Arrivals_min, row.Arrivals_max)
     u.at['Day{}'.format(i),:] = [row.Arrivals_min, row.Arrivals_max]
     i=i+1
-for index, row in CI.iterrows():
-    print("Class/Instructor demand range: ", "Class ", row.Description_, "Instructor ", row.Staff_, row.Arrivals_max, row.Arrivals_min)
-    u.at['Class{}Staff{}'.format(row.Description_,row.Staff_),:] = [row.Arrivals_min, row.Arrivals_max]
-for index, row in T.iterrows():
-    print("Time demand range: ", "Slot ", row.StartTime_, row.Arrivals_max, row.Arrivals_min)
-    u.at['Time{}'.format(row.StartTime_),:] = [row.Arrivals_min, row.Arrivals_max]
+# for index, row in CI.iterrows():
+#     #print("Class/Instructor demand range: ", "Class ", row.Description_, "Instructor ", row.Staff_, row.Arrivals_min, row.Arrivals_max)
+#     u.at['Class{}Staff{}'.format(row.Description_,row.Staff_),:] = [row.Arrivals_min, row.Arrivals_max]
 for index, row in C.iterrows():
-    print("Class demand range: ", "Slot ", row.Description_, row.Arrivals_max, row.Arrivals_min)
+    #print("Class demand range: ", "Slot ", row.Description_, row.Arrivals_min, row.Arrivals_max)
     u.at['Class{}'.format(row.Description_),:] = [row.Arrivals_min, row.Arrivals_max]
-C.to_csv('../Data/output/staticU.csv', index = False)
+for index, row in I.iterrows():
+    #print("Instructor demand range: ", "Instructor ", row.Staff_, row.Arrivals_min, row.Arrivals_max)
+    u.at['Instructor{}'.format(row.Staff_),:] = [row.Arrivals_min, row.Arrivals_max]
+
+u = cleaning.fillTimeSlots(u,T)
+
+u.to_csv('../Data/processed/staticPreU.csv')
+
+cleaning.createUncertaintySet(u)

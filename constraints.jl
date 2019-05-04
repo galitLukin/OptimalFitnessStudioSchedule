@@ -19,16 +19,12 @@ end
 # Instructor schedule constraints
 function instructorSchedule(model, x)
     Availability = readtable("Data/input/InstructorAvailability.csv", header=true, makefactors=true)
-    #println(Availability[19,:])
     for d in 1:D
         for i in 1:I
             row = (d-1)*I + i
             for t in 1:T
                 col = t + 2
                 if Availability[row,col] == 0
-                    # if d == 5 && i == 4
-                    #     @show d, row, t, col, i
-                    # end
                     for c in 1:C
                         @constraint(model, x[d,t,c,i] == 0)
                     end
@@ -96,16 +92,18 @@ function studio(model, x)
     end
 
     # two classes can't occur at the same time
+    C_ = 1:C
+    I_ = 1:I
     for d in 1:D
         for t in 1:T-3
             for i in 1:I
                 # one and half hour classes
                 for c in 1:4
-                    @constraint(model, x[d,t,c,i] + sum(x[d,t+t_,c_,i_] for t_=1:3, c_=1:C, i_=1:I) <= 1)
+                    @constraint(model, x[d,t,c,i] + sum(x[d,t,c_,i_] for c_ in C_[1:end .!= c], i_ in I_[1:end .!= i]) + sum(x[d,t+t_,c_,i_] for t_=1:3, c_=1:C, i_=1:I) <= 1)
                 end
                 # one hour classes
                 for c in 5:8
-                    @constraint(model, x[d,t,c,i] + sum(x[d,t+t_,c_,i_] for t_=1:2, c_=1:C, i_=1:I) <= 1)
+                    @constraint(model, x[d,t,c,i] + sum(x[d,t,c_,i_] for c_ in C_[1:end .!= c], i_ in I_[1:end .!= i]) + sum(x[d,t+t_,c_,i_] for t_=1:2, c_=1:C, i_=1:I) <= 1)
                 end
             end
         end
@@ -116,7 +114,7 @@ function studio(model, x)
         for t in 26:T-1
             for i in 1:I
                 for c in 1:C
-                    @constraint(model, x[d,t,c,i] + sum(x[d,t+t_,c_,i_] for t_=1:T-t ,c_=1:C, i_=1:I) <= 1)
+                    @constraint(model, x[d,t,c,i] + sum(x[d,t,c_,i_] for c_ in C_[1:end .!= c], i_ in I_[1:end .!= i]) + sum(x[d,t+t_,c_,i_] for t_=1:T-t ,c_=1:C, i_=1:I) <= 1)
                 end
             end
         end

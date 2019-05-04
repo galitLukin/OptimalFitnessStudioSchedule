@@ -8,22 +8,38 @@ D = 7
 T = 28
 C = 8
 I = 18
-L = 5
+L = 1
 U = 50
 
 eps = 0
-lb = 0
-ub = 10000
+diff = 1000
+ub = 1000
 
 k = 1
 # A is a vector of uncertainty matrices
-A = firstUncertainty()
-# while ub - lb > eps
-#     x, lb = getSchedule(A)
-#     println("Got schedule $k")
-#     ub, R = worstCase(x,A)
-#     append(A,R)
-#     k = k + 1
-# # end
-println(ub)
+A = []
+firstA = firstUncertainty()
+push!(A,firstA)
+println("got A")
+x = 0
+while diff > eps
+    x, ub = getSchedule(A)
+    println("Got schedule, UB: $ub")
+    nextA, lb = worstCase(x)
+    # for d in 1:D
+    #     for t in 1:T
+    #         for c in 1:C
+    #             for i in 1:I
+    #                 if nextA[d,t,c,i] > 5
+    #                     println(nextA[d,t,c,i])
+    #                 end
+    #             end
+    #         end
+    #     end
+    # end
+    println("Got wc, LB: $lb")
+    push!(A,nextA)
+    global diff = ub - lb
+    println("Diff is $diff")
+end
 visualizeSchedule(x)
