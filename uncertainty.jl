@@ -14,20 +14,25 @@ function firstUncertainty()
 end
 
 function buildUncertainties(obj,x)
-    minVals, maxVals = calcRanges()
-    newAs = []
-    feasible, A = wcArrivals(obj, x, minVals, maxVals)
-    if ~feasible
-        push!(newAs,A)
+    minVals, maxVals = calcRanges2()
+    As = []
+    AsLower = []
+    AsUpper = []
+    i = 1
+    feasible, A, objective = wcArrivals(obj, x, minVals, maxVals)
+    if ~feasible && objective >= 1
+        push!(As,A)
     end
     for d in 1:D
         for t in 1:T
             for c in 1:C
                 for i in 1:I
                     mi, ma = minVals[d,t,c,i], maxVals[d,t,c,i]
-                    feasible, A = wcLB(d,t,c,i,mi,ma)
+                    feasible, A = wcLB(x[d,t,c,i],mi,ma)
                     if ~feasible
-                        push!(newAs,A)
+                        push!(AsLower,A)
+                    else
+                        push!(AsLower,-1)
                     end
                 end
             end
@@ -38,45 +43,47 @@ function buildUncertainties(obj,x)
             for c in 1:C
                 for i in 1:I
                     mi, ma = minVals[d,t,c,i], maxVals[d,t,c,i]
-                    feasible, A = wcUB(d,t,c,i,mi,ma)
+                    feasible, A = wcUB(x[d,t,c,i],mi,ma)
                     if ~feasible
-                        push!(newAs,A)
+                        push!(AsUpper,A)
+                    else
+                        push!(AsUpper,-1)
                     end
                 end
             end
         end
     end
-    return newAs
+    return As, AsLower, AsUpper
 end
 
-function wcLB(d,t,c,i,mi,ma)
+function wcLB(x,mi,ma)
     wc = Model(solver=GurobiSolver(OutputFlag=0))
-    @variable(wc, A[1:D,1:T,1:C,1:I]>=0)
-    @objective(wc, Max, L*x[d,t,c,i] - A[d,t,c,i])
-    @constraint(wc, A[d,t,c,i] >= mi)
-    @constraint(wc, A[d,t,c,i] <= ma)
+    @variable(wc, A>=0)
+    @objective(wc, Max, L*x - A)
+    @constraint(wc, A >= mi)
+    @constraint(wc, A <= ma)
     solve(wc)
-    aVals = getvalue(A)
+    aVal = getvalue(A)
     objective = getobjectivevalue(wc)
     if objective > 0
-        return false, aVals
+        return false, aVal
     end
-    return true, aVals
+    return true, aVal
 end
 
-function wcUB(d,t,c,i,mi,ma)
+function wcUB(x,mi,ma)
     wc = Model(solver=GurobiSolver(OutputFlag=0))
-    @variable(wc, A[1:D,1:T,1:C,1:I]>=0)
-    @objective(wc, Max, A[d,t,c,i]*x[d,t,c,i] - U)
-    @constraint(wc, A[d,t,c,i] >= mi)
-    @constraint(wc, A[d,t,c,i] <= ma)
+    @variable(wc, A>=0)
+    @objective(wc, Max, A*x - U)
+    @constraint(wc, A >= mi)
+    @constraint(wc, A <= ma)
     solve(wc)
-    aVals = getvalue(A)
+    aVal = getvalue(A)
     objective = getobjectivevalue(wc)
     if objective > 0
-        return false, aVals
+        return false, aVal
     end
-    return true, aVals
+    return true, aVal
 end
 
 function wcArrivals(obj, x, minVals, maxVals)
@@ -96,14 +103,17 @@ function wcArrivals(obj, x, minVals, maxVals)
             end
         end
     end
-
+    for d in 1:D
+        @constraint(wc, sum(A[d,t,c,i]*x[d,t,c,i] for t=1:T, c=1:C, i=1:I) >= 40)
+        @constraint(wc, sum(A[d,t,c,i]*x[d,t,c,i] for t=1:T, c=1:C, i=1:I) >= 250)
+    end
     solve(wc)
     aVals = getvalue(A)
     objective = getobjectivevalue(wc)
     if objective > 0
-        return false, aVals
+        return false, aVals, objective
     end
-    return true, aVals
+    return true, [], objective
 end
 
 function calcRanges()
@@ -135,6 +145,25 @@ function calcRanges()
                     if maxVals[d,t,c,i] > slots[t]
                         slots[t] = maxVals[d,t,c,i]
                     end
+                end
+            end
+        end
+    end
+    return minVals, maxVals
+end
+
+function calcRanges2()
+    uMin = readtable("Data/output/staticUMin.csv", header=true, makefactors=true)
+    uMax = readtable("Data/output/staticUMin.csv", header=true, makefactors=true)
+    minVals = zeros(Int64, D,T,C,I)
+    maxVals = zeros(Int64, D,T,C,I)
+    for d in 1:D
+        for t in 1:T
+            for c in 1:C
+                for i in 1:I
+                    row = (d-1)*224 + (t-1)*8 + c
+                    minVals[d,t,c,i] = uMin[row,i]
+                    maxVals[d,t,c,i] = uMax[row,i]
                 end
             end
         end

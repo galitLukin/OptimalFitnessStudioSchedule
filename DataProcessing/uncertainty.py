@@ -3,11 +3,12 @@ import datetime
 
 import cleaning
 
+D = 7
+T = 28
+C = 8
+I = 18
+
 def createUncertaintySet(constraintTypes):
-    D = 7
-    T = 28
-    C = 8
-    I = 18
     title = constraintTypes.index.tolist()
     mi = constraintTypes.MinVal.tolist()
     ma = constraintTypes.MaxVal.tolist()
@@ -145,3 +146,84 @@ def buildRanges(attendance):
 
     u.to_csv('../Data/processed/staticPreU.csv', index = False)
     return u
+
+
+def buildRanges3(attendance):
+    f = {'Arrivals': [q2,q4]}
+    #range per class
+    DTCI = attendance.groupby(['StartTime','Description','Staff','WeekDay'], as_index=False).agg(f)
+
+    DTCI.columns = ["_".join(x) for x in DTCI.columns.ravel()]
+
+    DTCI.to_csv('../Data/processed/DTCIdemand.csv', index = False)
+
+    cols = []
+    for k in range(1,19):
+        cols.append('I_{}'.format(k))
+    uMin = pd.DataFrame(columns=cols)
+    uMax = pd.DataFrame(columns=cols)
+    for d in range(1,D+1):
+        print(d)
+        for t in range(1,T+1):
+            for c in range(1,C+1):
+                for i in range(1,I+1):
+                    cell = DTCI.loc[(DTCI.WeekDay_ == d) & (DTCI.StartTime_ == t) & (DTCI.Description_ == c) & (DTCI.Staff_ == i), :]
+                    if cell.empty:
+                        uMin.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = 0
+                        uMax.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = 0
+                    else:
+                        cell = cell.reset_index(drop=True)
+                        uMin.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(cell.Arrivals_q2[0])
+                        uMax.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(cell.Arrivals_q4[0])
+
+    uMin.to_csv('../Data/output/staticUMin.csv', index = False)
+    uMax.to_csv('../Data/output/staticUMax.csv', index = False)
+
+def buildRanges4(attendance):
+    f = {'Arrivals': [q2,q4]}
+    #range per class
+    DTCI = attendance.groupby(['StartTime','Description','Staff','WeekDay'], as_index=False).agg(f)
+    #range per day and time
+    DT = attendance.groupby(['StartTime','WeekDay'], as_index=False).agg(f)
+    #range per class type, instructor
+    CI = attendance.groupby(['Description','Staff'], as_index=False).agg(f)
+
+    DTCI.columns = ["_".join(x) for x in DTCI.columns.ravel()]
+    DT.columns = ["_".join(x) for x in DT.columns.ravel()]
+    CI.columns = ["_".join(x) for x in CI.columns.ravel()]
+
+    #DTCI.to_csv('../Data/processed/DTCIdemand.csv', index = False)
+
+    cols = []
+    for k in range(1,19):
+        cols.append('I_{}'.format(k))
+    uMin = pd.DataFrame(columns=cols)
+    uMax = pd.DataFrame(columns=cols)
+    for d in range(1,D+1):
+        print(d)
+        for t in range(1,T+1):
+            for c in range(1,C+1):
+                for i in range(1,I+1):
+                    cell = DTCI.loc[(DTCI.WeekDay_ == d) & (DTCI.StartTime_ == t) & (DTCI.Description_ == c) & (DTCI.Staff_ == i), :]
+                    if cell.empty:
+                        dtcell = DT.loc[(DT.WeekDay_ == d) & (DT.StartTime_ == t), :]
+                        cicell = CI.loc[(CI.Description_ == c) & (CI.Staff_ == i), :]
+                        if cicell.empty:
+                            uMin.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = 0
+                            uMax.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = 0
+                        elif dtcell.empty:
+                            cicell = cicell.reset_index(drop=True)
+                            uMin.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(cicell.Arrivals_q2[0])
+                            uMax.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(cicell.Arrivals_q4[0])
+                        else:
+                            dtcell = dtcell.reset_index(drop=True)
+                            cicell = cicell.reset_index(drop=True)
+                            uMin.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(max(dtcell.Arrivals_q2[0], cicell.Arrivals_q2[0]))
+                            uMax.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(min(dtcell.Arrivals_q4[0], cicell.Arrivals_q4[0]))
+                    else:
+                        cell = cell.reset_index(drop=True)
+                        uMin.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(cell.Arrivals_q2[0])
+                        uMax.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(cell.Arrivals_q4[0])
+
+    uMin.to_csv('../Data/output/staticUMin.csv', index = False)
+    uMax.to_csv('../Data/output/staticUMax.csv', index = False)

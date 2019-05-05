@@ -25,3 +25,50 @@ function visualizeSchedule(x)
     end
     writetable("Data/output/schedule.csv",schedule)
 end
+
+function populateSubAs(allSubAs,newSubAs)
+    for d in 1:D
+        for t in 1:T
+            for c in 1:C
+                for i in 1:I
+                    ind = (d-1)*4032 + (t-1)*144 + (c-1)*18 + i
+                    if newSubAs[ind] >= 0
+                        println(ind)
+                        println(newSubAs[ind])
+                        push!(allSubAs[ind],newSubAs[ind])
+                    end
+                end
+            end
+        end
+    end
+end
+
+function initiateSubAs(allSubAs, firstA)
+    for d in 1:D
+        for t in 1:T
+            for c in 1:C
+                for i in 1:I
+                    push!(allSubAs,[firstA[d,t,c,i]])
+                end
+            end
+        end
+    end
+end
+
+function isSubEmpty(subAs)
+    k = 0
+    violated = []
+    for val in subAs
+        if val != -1
+            push!(violated, k)
+        end
+        k = k + 1
+    end
+    for v in violated
+        println("violated constraints: $v")
+    end
+    if size(violated,1) >= 1
+        return false
+    end
+    return true
+end

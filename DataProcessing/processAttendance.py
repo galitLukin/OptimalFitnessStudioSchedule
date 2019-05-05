@@ -51,5 +51,5 @@ attendance.Staff = attendance.Staff.apply(lambda instructor: cleaning.filterInst
 attendance = attendance.loc[attendance.Staff != "Filter"]
 
 uncertainty.buildFirstUset(attendance)
-u = uncertainty.buildRanges(attendance)
-uncertainty.createUncertaintySet(u)
+uncertainty.buildRanges4(attendance)
+#uncertainty.createUncertaintySet(u)
