@@ -95,8 +95,8 @@ def timeSlots():
 def fillTimeSlots(u,T):
     #Fill in missing timeSlots
     pastSlots = T.StartTime_.tolist()
-    pastMax = T.Arrivals_max.tolist()
-    pastMin = T.Arrivals_min.tolist()
+    pastMax = T.Arrivals_q4.tolist()
+    pastMin = T.Arrivals_q2.tolist()
     for i in range(1,29):
         if i in pastSlots:
             ind = pastSlots.index(i)
@@ -123,35 +123,3 @@ def fillTimeSlots(u,T):
             ma = prevMax
         u.at['Time{}'.format(i),:] = [mi, ma]
     return u
-
-
-def createUncertaintySet(constraintTypes):
-    D = 7
-    T = 28
-    C = 8
-    I = 18
-    title = constraintTypes.index
-    mi = constraintTypes.MinVal.tolist()
-    ma = constraintTypes.MaxVal.tolist()
-    u = pd.DataFrame(index = range(84680), columns=['D','T','C','I','MinVal','MaxVal'])
-    k = 0
-    #weekly
-    u.loc[k] = pd.Series({'D':0, 'T':0, 'C':0, 'I':0, 'MinVal':constraintTypes.loc['Weekly','MinVal'] , 'MaxVal':constraintTypes.loc['Weekly','MaxVal']})
-    k+=1
-    for d in range(1,D+1):
-        u.loc[k] = pd.Series({'D':d, 'T':0, 'C':0, 'I':0, 'MinVal':constraintTypes.loc['Day{}'.format(d),'MinVal'] , 'MaxVal':constraintTypes.loc['Day{}'.format(d),'MaxVal']})
-        k+=1
-        for t in range(1,T+1):
-            for c in range(1,C+1):
-                for i in range(1,I+1):
-                    print(d,t,c,i)
-                    ind = title.index('Time{}'.format(t))
-                    u.loc[k] = pd.Series({'D':d, 'T':t, 'C':c, 'I':i, 'MinVal':mi[ind], 'MaxVal':ma[ind]})
-                    k+=1
-                    ind = title.index('Class{}'.format(c),)
-                    u.loc[k] = pd.Series({'D':d, 'T':t, 'C':c, 'I':i, 'MinVal':mi[ind] , 'MaxVal':ma[ind]})
-                    k+=1
-                    ind = title.index('Instructor{}'.format(i))
-                    u.loc[k] = pd.Series({'D':d, 'T':t, 'C':c, 'I':i, 'MinVal':mi[ind] , 'MaxVal':ma[ind]})
-                    k+=1
-    u.to_csv('../Data/output/staticU.csv')

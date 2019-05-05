@@ -4,16 +4,20 @@ using MLDataUtils
 # How many class types per day/week
 function classTypeOccurence(model, x)
     for d in 1:D
-        @constraint(model, sum(x[d,t,1,i] for t=1:T, i=1:I) >= 2)
+        #@constraint(model, sum(x[d,t,1,i] for t=1:T, i=1:I) >= 2)
+        @constraint(model, sum(x[d,t,1,i] for t=1:T, i=1:I) >= 1)
         @constraint(model, sum(x[d,t,5,i] for t=1:T, i=1:I) >= 1)
     end
     @constraint(model, sum(x[d,t,2,i] for d=1:D, t=1:T, i=1:I) >= 1)
     @constraint(model, sum(x[d,t,3,i] for d=1:D, t=1:T, i=1:I) >= 1)
     @constraint(model, sum(x[d,t,3,i] for d=1:D, t=1:T, i=1:I) <= 2)
     @constraint(model, sum(x[d,t,4,i] for d=1:D, t=1:T, i=1:I) == 1)
-    @constraint(model, sum(x[d,t,6,i] for d=1:D, t=1:T, i=1:I) >= 2)
-    @constraint(model, sum(x[d,t,7,i] for d=1:D, t=1:T, i=1:I) >= 5)
-    @constraint(model, sum(x[d,t,8,i] for d=1:D, t=1:T, i=1:I) >= 5)
+    @constraint(model, sum(x[d,t,6,i] for d=1:D, t=1:T, i=1:I) >= 1)
+    @constraint(model, sum(x[d,t,7,i] for d=1:D, t=1:T, i=1:I) >= 1)
+    @constraint(model, sum(x[d,t,8,i] for d=1:D, t=1:T, i=1:I) >= 1)
+    # @constraint(model, sum(x[d,t,6,i] for d=1:D, t=1:T, i=1:I) >= 2)
+    # @constraint(model, sum(x[d,t,7,i] for d=1:D, t=1:T, i=1:I) >= 5)
+    # @constraint(model, sum(x[d,t,8,i] for d=1:D, t=1:T, i=1:I) >= 5)
 end
 
 # Instructor schedule constraints
@@ -64,6 +68,7 @@ function instuctorClassType(model, x)
     IC = readtable("Data/input/IntstructorClass.csv", header=true, makefactors=true)
     for c in 1:C
         for i in 1:I
+            # +1 to account for column of instructor name
             if IC[i,c+1] == 0
                 for d in 1:D
                     for t in 1:T

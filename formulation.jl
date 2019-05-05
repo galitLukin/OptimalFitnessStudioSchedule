@@ -28,7 +28,6 @@ function getSchedule(allA)
         # studio feasibility constraints
         studio(model, x)
 
-        # this will be robust
         # max/min in each class
         for d in 1:D
             for t in 1:T
