@@ -14,12 +14,12 @@ function firstUncertainty()
 end
 
 function buildUncertainties(obj,x)
-    minVals, maxVals = calcRanges2()
+    minVals, maxVals, minWeekly, maxWeekly, dailyMin, dailyMax = calcRanges()
     As = []
     AsLower = []
     AsUpper = []
     i = 1
-    feasible, A, objective = wcArrivals(obj, x, minVals, maxVals)
+    feasible, A, objective = wcArrivals(obj, x, minVals, maxVals, minWeekly, maxWeekly, dailyMin, dailyMax)
     if ~feasible && objective >= 1
         push!(As,A)
     end
@@ -86,7 +86,7 @@ function wcUB(x,mi,ma)
     return true, aVal
 end
 
-function wcArrivals(obj, x, minVals, maxVals)
+function wcArrivals(obj, x, minVals, maxVals, minWeekly, maxWeekly, dailyMin, dailyMax)
     # solve worst case min problem - formulate WC
     wc = Model(solver=GurobiSolver(OutputFlag=0))
 
@@ -104,9 +104,9 @@ function wcArrivals(obj, x, minVals, maxVals)
         end
     end
     for d in 1:D
-        @constraint(wc, sum(A[d,t,c,i]*x[d,t,c,i] for t=1:T, c=1:C, i=1:I) >= 40)
-        @constraint(wc, sum(A[d,t,c,i]*x[d,t,c,i] for t=1:T, c=1:C, i=1:I) >= 250)
+        @constraint(wc, sum(A[d,t,c,i]*x[d,t,c,i] for t=1:T, c=1:C, i=1:I) >= dailyMin[d])
     end
+    @constraint(wc, sum(A[d,t,c,i]*x[d,t,c,i] for d=1:D, t=1:T, c=1:C, i=1:I) >= minWeekly)
     solve(wc)
     aVals = getvalue(A)
     objective = getobjectivevalue(wc)
@@ -117,42 +117,6 @@ function wcArrivals(obj, x, minVals, maxVals)
 end
 
 function calcRanges()
-    u = readtable("Data/output/staticU.csv", header=true, makefactors=true)
-    M = 500
-    minVals = ones(Int64, D,T,C,I) * M
-    maxVals = zeros(Int64, D,T,C,I)
-    for k in 1:size(u, 1)
-        d = Int8(floor(u[k,:D]))
-        t = Int8(floor(u[k,:T]))
-        c = Int8(floor(u[k,:C]))
-        i = Int8(floor(u[k,:I]))
-        mi = Int64(floor(u[k,:MinVal]))
-        ma = Int64(floor(u[k,:MaxVal]))
-
-        if mi < minVals[d,t,c,i]
-            minVals[d,t,c,i] = mi
-        end
-        if ma > maxVals[d,t,c,i]
-            maxVals[d,t,c,i] = ma
-        end
-    end
-
-    for d in 1:D
-        slots = zeros(Int64, 28)
-        for t in 1:T
-            for c in 1:C
-                for i in 1:I
-                    if maxVals[d,t,c,i] > slots[t]
-                        slots[t] = maxVals[d,t,c,i]
-                    end
-                end
-            end
-        end
-    end
-    return minVals, maxVals
-end
-
-function calcRanges2()
     uMin = readtable("Data/output/staticUMin.csv", header=true, makefactors=true)
     uMax = readtable("Data/output/staticUMin.csv", header=true, makefactors=true)
     minVals = zeros(Int64, D,T,C,I)
@@ -161,12 +125,20 @@ function calcRanges2()
         for t in 1:T
             for c in 1:C
                 for i in 1:I
-                    row = (d-1)*224 + (t-1)*8 + c
+                    row = (d-1)*T*C + (t-1)*C + c
                     minVals[d,t,c,i] = uMin[row,i]
                     maxVals[d,t,c,i] = uMax[row,i]
                 end
             end
         end
     end
-    return minVals, maxVals
+    uDaily = readtable("Data/output/staticUDaily.csv", header=true, makefactors=true)
+    minWeekly, maxWeekly = uDaily[1,:MinVal], uDaily[1,:MaxVal]
+    dailyMin = []
+    dailyMax = []
+    for i=2:8
+         push!(dailyMin, uDaily[1,:MinVal])
+         push!(dailyMax, uDaily[1,:MaxVal])
+    end
+    return minVals, maxVals, minWeekly, maxWeekly, dailyMin, dailyMax
 end

@@ -8,7 +8,7 @@ D = 7
 T = 28
 C = 8
 I = 18
-L = 5
+L = 0
 U = 55
 
 # A is a vector of uncertainty matrices
