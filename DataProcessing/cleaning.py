@@ -53,7 +53,7 @@ def removeOutlierWeeks(perDate):
     demand = perDate['Client ID'].tolist()
     plt.hist(demand, bins=10)
     plt.title("Histogram of Demand")
-    #plt.show()
+    plt.show()
     perDate['Date'] = pd.to_datetime(perDate['Date'])
     gr = perDate.groupby(pd.Grouper(key='Date',freq='W-MON'))
     weeks = []
@@ -77,7 +77,7 @@ def removeOutlierWeeks(perDate):
     d = {'Week' : weeks, 'Arrivals' : weekDemand}
     WEEK = pd.DataFrame(data=d)
     WEEK.to_csv('../Data/processed/WEEKdemand.csv', index = False)
-    #plt.show()
+    plt.show()
     return perDate
 
 
