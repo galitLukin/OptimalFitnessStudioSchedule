@@ -83,13 +83,16 @@ for i in range(7):
             temp = temp + row.DayTimePopularity
         x = np.array([t.hour + t.minute/60.0] * len(temp))
         y = np.array(temp)
-        dt.loc['D_{}_T_{}'.format(i+1,t.hour + t.minute/60.0),:] = [np.mean(y),np.std(y)]
+        dt.loc['D_{}_T_{}'.format(i+1,int(((t.hour + t.minute/60.0) - 6)*2+1)),:] = [np.mean(y),np.std(y)]
         #plt.scatter(x,y)
     #plt.show()
 
-best = dt.loc[dt.MeanArrivals >= 0.04]
-med = dt.loc[(dt.MeanArrivals < 0.04) & (dt.MeanArrivals >= 0.02)]
-worst = dt.loc[dt.MeanArrivals < 0.02]
+bestDT = dt.loc[dt.MeanArrivals >= 0.04]
+medDT = dt.loc[(dt.MeanArrivals < 0.04) & (dt.MeanArrivals >= 0.02)]
+worstDT = dt.loc[dt.MeanArrivals < 0.02]
+bestDT = bestDT.index.tolist()
+medDT = medDT.index.tolist()
+worstDT = worstDT.index.tolist()
 
 ciArrivals = attendance.groupby(['Date','Description','Staff'])['Client ID'].sum().reset_index()
 perCI = pd.merge(weeklyArrivals, ciArrivals, on = 'Date', how = 'inner')
@@ -103,11 +106,26 @@ for c in cleaning.classes:
         y = []
         for index, row in tempdf.iterrows():
             y.append(float(row['Client ID'])/row.WeekArrivals)
-        ci.loc['{}_{}'.format(row.Description,row.Staff),:] = [np.mean(y),np.std(y)]
+        indc = cleaning.classes.index(row.Description)
+        indi = cleaning.instructors.index(row.Staff)
+        ci.loc['C_{}_I_{}'.format(indc,indi),:] = [np.mean(y),np.std(y)]
 
-best = ci.loc[ci.MeanArrivals >= 0.049]
-med = ci.loc[(ci.MeanArrivals < 0.049) & (ci.MeanArrivals >= 0.03)]
-worst = ci.loc[ci.MeanArrivals < 0.03]
+bestCI = ci.loc[ci.MeanArrivals >= 0.049]
+medCI = ci.loc[(ci.MeanArrivals < 0.049) & (ci.MeanArrivals >= 0.03)]
+worstCI = ci.loc[ci.MeanArrivals < 0.03]
+bestCI = bestCI.index.tolist()
+medCI = medCI.index.tolist()
+worstCI = worstCI.index.tolist()
 
-print(len(best),len(med),len(worst))
-print(best)
+categories = pd.DataFrame(index = range(9), columns = ['DT','CI'])
+categories.loc[0,:] = [bestDT, bestCI]
+categories.loc[1,:] = [bestDT, medCI]
+categories.loc[2,:] = [bestDT, worstCI]
+categories.loc[3,:] = [medDT, bestCI]
+categories.loc[4,:] = [medDT, medCI]
+categories.loc[5,:] = [medDT, worstCI]
+categories.loc[6,:] = [worstDT, bestCI]
+categories.loc[7,:] = [worstDT, medCI]
+categories.loc[8,:] = [worstDT, worstCI]
+
+categories.to_csv('../Data/predict/categories.csv', index = False)
