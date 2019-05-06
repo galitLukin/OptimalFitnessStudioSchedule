@@ -1,8 +1,6 @@
 using DataFrames, MLDataUtils
-using Suppressor
+
 include("formulation.jl")
-
-
 include("uncertainty.jl")
 include("utils.jl")
 
@@ -38,6 +36,7 @@ println("got A")
 x = 0
 ub = 0
 iterations = 0
+vals = []
 while newAs != [] || lowerIsEmpty == false || upperIsEmpty == false
     for nextA in newAs
         push!(allAs,nextA)
@@ -45,6 +44,7 @@ while newAs != [] || lowerIsEmpty == false || upperIsEmpty == false
         println("length of allAs: $s")
     end
     x, ub = getSchedule(allAs, allSubAsLower, allSubAsUpper)
+    push!(vals,ub)
     println("Got schedule, UB: $ub")
     if isnan(ub)
         break
@@ -67,3 +67,4 @@ while newAs != [] || lowerIsEmpty == false || upperIsEmpty == false
 end
 visualizeSchedule(x)
 println(iterations)
+println(vals)

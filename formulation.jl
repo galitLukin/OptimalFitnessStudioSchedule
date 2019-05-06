@@ -26,6 +26,9 @@ function getSchedule(allA, allSubAsLower, allSubAsUpper)
     # Instructor class type constraints
     instuctorClassType(model, x)
 
+    # Instructor class type constraints
+    instuctorFairness(model, x)
+
     # studio feasibility constraints
     studio(model, x)
 

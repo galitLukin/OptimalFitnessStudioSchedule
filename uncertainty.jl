@@ -22,6 +22,9 @@ function firstUncertainty()
                 for i in 1:I
                     mi, ma = minVals[d,t,c,i], maxVals[d,t,c,i]
                     a[d,t,c,i] = Int64(floor((mi + ma)/2))
+                    # if ma > 0
+                    #     a[d,t,c,i] = 55#Int64(floor((mi + ma)/2))
+                    # end
                 end
             end
         end
@@ -47,6 +50,15 @@ function firstUncertainty()
             add = maxVals[d,t,c,i] - a[d,t,c,i]
             a[d,t,c,i] = a[d,t,c,i] + add
             diff = diff - add
+        end
+    end
+    for k in 1:2000
+        d = rand(1:D)
+        t = rand(1:T)
+        c = rand(1:C)
+        i = rand(1:I)
+        if a[d,t,c,i] > 0
+            a[d,t,c,i] = 55
         end
     end
     return a
@@ -132,16 +144,16 @@ function wcArrivals(obj, x, minVals, maxVals, minWeekly, maxWeekly, dailyMin, da
     @variable(wc, A[1:D,1:T,1:C,1:I]>=0)
 
     @objective(wc, Max, obj - sum(A[d,t,c,i]*x[d,t,c,i] for d=1:D, t=1:T, c=1:C, i=1:I))
-    for d in 1:D
-        for t in 1:T
-            for c in 1:C
-                for i in 1:I
-                    @constraint(wc, A[d,t,c,i] >= minVals[d,t,c,i])
-                    @constraint(wc, A[d,t,c,i] <= maxVals[d,t,c,i])
-                end
-            end
-        end
-    end
+    # for d in 1:D
+    #     for t in 1:T
+    #         for c in 1:C
+    #             for i in 1:I
+    #                 @constraint(wc, A[d,t,c,i] >= minVals[d,t,c,i])
+    #                 @constraint(wc, A[d,t,c,i] <= maxVals[d,t,c,i])
+    #             end
+    #         end
+    #     end
+    # end
     for d in 1:D
         @constraint(wc, sum(A[d,t,c,i]*x[d,t,c,i] for t=1:T, c=1:C, i=1:I) >= dailyMin[d])
     end

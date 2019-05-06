@@ -88,11 +88,13 @@ for i in range(7):
     #plt.show()
 
 bestDT = dt.loc[dt.MeanArrivals >= 0.03]
+print(len(bestDT))
 #medDT = dt.loc[(dt.MeanArrivals < 0.04) & (dt.MeanArrivals >= 0.02)]
 worstDT = dt.loc[dt.MeanArrivals < 0.03]
 bestDT = bestDT.index.tolist()
 #medDT = medDT.index.tolist()
 worstDT = worstDT.index.tolist()
+print(len(worstDT))
 
 ciArrivals = attendance.groupby(['Date','Description','Staff'])['Client ID'].sum().reset_index()
 perCI = pd.merge(weeklyArrivals, ciArrivals, on = 'Date', how = 'inner')
@@ -116,6 +118,8 @@ worstCI = ci.loc[ci.MeanArrivals < 0.03]
 bestCI = bestCI.index.tolist()
 #medCI = medCI.index.tolist()
 worstCI = worstCI.index.tolist()
+print(len(bestCI))
+print(len(worstCI))
 
 categories = pd.DataFrame(index = range(1,5), columns = ['DT','CI'])
 categories.loc[1,:] = [bestDT, bestCI]

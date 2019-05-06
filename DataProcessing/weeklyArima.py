@@ -38,16 +38,20 @@ attendance.StartTime = attendance.StartTime.apply(lambda x : int(((x.hour + x.mi
 gr = attendance.groupby(pd.Grouper(key='Date',freq='W-MON'))
 weeklyArrivals = pd.DataFrame(columns= ['Arrivals'])
 
-for name,group in gr:
+for name, group in gr:
     weeklyArrivals.loc[name.date(),'Arrivals'] = sum(group.ClientID)
-#print(weeklyArrivals)
-#weeklyArrivals.plot()
-#pyplot.show()
 
-#autocorrelation_plot(weeklyArrivals)
-#pyplot.show()
+weeklyArrivals.index.name = 'Date'
+weeklyArrivals = weeklyArrivals.reset_index()
+print(weeklyArrivals)
 
-model = ARIMA(weeklyArrivals, order=(4,1,0))
+weeklyArrivals.plot()
+pyplot.show()
+
+autocorrelation_plot(weeklyArrivals.Arrivals)
+pyplot.show()
+
+model = ARIMA(weeklyArrivals.Arrivals, order=(4,1,0))
 model_fit = model.fit(disp=0)
 print(model_fit.summary())
 # plot residual errors

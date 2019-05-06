@@ -2,6 +2,7 @@ import pandas as pd
 import datetime
 
 import cleaning
+import mapping
 
 D = 7
 T = 28
@@ -86,6 +87,11 @@ def buildRanges(attendance):
     CI.columns = ["_".join(x) for x in CI.columns.ravel()]
     Daily.columns = ["_".join(x) for x in Daily.columns.ravel()]
 
+    DT.to_csv('../Data/processed/dt.csv')
+
+    DT = mapping.mapMissingDT(DT)
+    CI = mapping.mapMissingCI(CI)
+
     cols = ['MinVal','MaxVal']
     uDaily = pd.DataFrame(columns=cols)
     uDaily.at['Weekly',:] = [min(WEEK.Arrivals), max(WEEK.Arrivals)]
@@ -109,18 +115,15 @@ def buildRanges(attendance):
                     if cell.empty:
                         dtcell = DT.loc[(DT.WeekDay_ == d) & (DT.StartTime_ == t), :]
                         cicell = CI.loc[(CI.Description_ == c) & (CI.Staff_ == i), :]
-                        if cicell.empty:
-                            uMin.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = 0
-                            uMax.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = 0
-                        elif dtcell.empty:
-                            cicell = cicell.reset_index(drop=True)
-                            uMin.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(cicell.Arrivals_q2[0])
-                            uMax.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(cicell.Arrivals_q4[0])
-                        else:
+                        if len(cicell)>0 and len(dtcell)>0:
                             dtcell = dtcell.reset_index(drop=True)
                             cicell = cicell.reset_index(drop=True)
                             uMin.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(max(dtcell.Arrivals_q2[0], cicell.Arrivals_q2[0]))
                             uMax.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(min(dtcell.Arrivals_q4[0], cicell.Arrivals_q4[0]))
+                        else:
+                            # teacher does not teach class
+                            uMin.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = 0
+                            uMax.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = 0
                     else:
                         cell = cell.reset_index(drop=True)
                         uMin.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(cell.Arrivals_q2[0])
