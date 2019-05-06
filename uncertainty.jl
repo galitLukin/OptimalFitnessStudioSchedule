@@ -1,6 +1,6 @@
 using DataFrames, JuMP
 
-function firstUncertainty()
+function firstUncertaintyOrig()
     lastWeekSchedule = readtable("Data/output/attendanceLastWeekIndex.csv", header=true, makefactors=true)
     a = zeros(Int8, D,T,C,I)
     for k in 1:size(lastWeekSchedule, 1)
@@ -9,6 +9,45 @@ function firstUncertainty()
         c = lastWeekSchedule[k, :Description]
         i = lastWeekSchedule[k, :Staff]
         a[d,t,c,i] = lastWeekSchedule[k, :Arrivals]
+    end
+    return a
+end
+
+function firstUncertainty()
+    minVals, maxVals, minWeekly, maxWeekly, dailyMin, dailyMax = calcRanges()
+    a = zeros(Int64, D,T,C,I)
+    for d in 1:D
+        for t in 1:T
+            for c in 1:C
+                for i in 1:I
+                    mi, ma = minVals[d,t,c,i], maxVals[d,t,c,i]
+                    a[d,t,c,i] = Int64(floor((mi + ma)/2))
+                end
+            end
+        end
+    end
+    for d in 1:D
+        if sum(a[d,t,c,i] for t=1:T, c=1:C, i=1:I) < dailyMin[d]
+             for t in 1:T
+                 for c in 1:C
+                     for i in 1:I
+                         a[d,t,c,i] = maxVals[d,t,c,i]
+                     end
+                 end
+             end
+        end
+    end
+    if sum(a[d,t,c,i] for d=1:D, t=1:T, c=1:C, i=1:I) < minWeekly
+        diff = minWeekly - sum(a[d,t,c,i] for d=1:D, t=1:T, c=1:C, i=1:I)
+        while diff > 0
+            d = rand(1:D)
+            t = rand(1:T)
+            c = rand(1:C)
+            i = rand(1:I)
+            add = maxVals[d,t,c,i] - a[d,t,c,i]
+            a[d,t,c,i] = a[d,t,c,i] + add
+            diff = diff - add
+        end
     end
     return a
 end
@@ -137,8 +176,8 @@ function calcRanges()
     dailyMin = []
     dailyMax = []
     for i=2:8
-         push!(dailyMin, uDaily[1,:MinVal])
-         push!(dailyMax, uDaily[1,:MaxVal])
+         push!(dailyMin, uDaily[i,:MinVal])
+         push!(dailyMax, uDaily[i,:MaxVal])
     end
     return minVals, maxVals, minWeekly, maxWeekly, dailyMin, dailyMax
 end

@@ -87,11 +87,11 @@ for i in range(7):
         #plt.scatter(x,y)
     #plt.show()
 
-bestDT = dt.loc[dt.MeanArrivals >= 0.04]
-medDT = dt.loc[(dt.MeanArrivals < 0.04) & (dt.MeanArrivals >= 0.02)]
-worstDT = dt.loc[dt.MeanArrivals < 0.02]
+bestDT = dt.loc[dt.MeanArrivals >= 0.03]
+#medDT = dt.loc[(dt.MeanArrivals < 0.04) & (dt.MeanArrivals >= 0.02)]
+worstDT = dt.loc[dt.MeanArrivals < 0.03]
 bestDT = bestDT.index.tolist()
-medDT = medDT.index.tolist()
+#medDT = medDT.index.tolist()
 worstDT = worstDT.index.tolist()
 
 ciArrivals = attendance.groupby(['Date','Description','Staff'])['Client ID'].sum().reset_index()
@@ -110,22 +110,22 @@ for c in cleaning.classes:
         indi = cleaning.instructors.index(row.Staff)
         ci.loc['C_{}_I_{}'.format(indc,indi),:] = [np.mean(y),np.std(y)]
 
-bestCI = ci.loc[ci.MeanArrivals >= 0.049]
-medCI = ci.loc[(ci.MeanArrivals < 0.049) & (ci.MeanArrivals >= 0.03)]
+bestCI = ci.loc[ci.MeanArrivals >= 0.03]
+#medCI = ci.loc[(ci.MeanArrivals < 0.049) & (ci.MeanArrivals >= 0.03)]
 worstCI = ci.loc[ci.MeanArrivals < 0.03]
 bestCI = bestCI.index.tolist()
-medCI = medCI.index.tolist()
+#medCI = medCI.index.tolist()
 worstCI = worstCI.index.tolist()
 
-categories = pd.DataFrame(index = range(9), columns = ['DT','CI'])
-categories.loc[0,:] = [bestDT, bestCI]
-categories.loc[1,:] = [bestDT, medCI]
+categories = pd.DataFrame(index = range(1,5), columns = ['DT','CI'])
+categories.loc[1,:] = [bestDT, bestCI]
 categories.loc[2,:] = [bestDT, worstCI]
-categories.loc[3,:] = [medDT, bestCI]
-categories.loc[4,:] = [medDT, medCI]
-categories.loc[5,:] = [medDT, worstCI]
-categories.loc[6,:] = [worstDT, bestCI]
-categories.loc[7,:] = [worstDT, medCI]
-categories.loc[8,:] = [worstDT, worstCI]
+categories.loc[3,:] = [worstDT, bestCI]
+categories.loc[4,:] = [worstDT, bestCI]
+# categories.loc[5,:] = [medDT, medCI]
+# categories.loc[6,:] = [medDT, worstCI]
+# categories.loc[7,:] = [worstDT, bestCI]
+# categories.loc[8,:] = [worstDT, medCI]
+# categories.loc[9,:] = [worstDT, worstCI]
 
-categories.to_csv('../Data/predict/categories.csv', index = False)
+categories.to_csv('../Data/predict/categories.csv')

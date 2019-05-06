@@ -1,6 +1,8 @@
 using DataFrames, MLDataUtils
-
+using Suppressor
 include("formulation.jl")
+
+
 include("uncertainty.jl")
 include("utils.jl")
 
@@ -8,7 +10,7 @@ D = 7
 T = 28
 C = 8
 I = 18
-L = 0
+L = 15
 U = 55
 
 # A is a vector of uncertainty matrices
@@ -35,6 +37,7 @@ end
 println("got A")
 x = 0
 ub = 0
+iterations = 0
 while newAs != [] || lowerIsEmpty == false || upperIsEmpty == false
     for nextA in newAs
         push!(allAs,nextA)
@@ -60,6 +63,7 @@ while newAs != [] || lowerIsEmpty == false || upperIsEmpty == false
         println("poplating upper")
         populateSubAs(allSubAsUpper, newSubAsUpper)
     end
+    iterations = iterations + 1
 end
 visualizeSchedule(x)
-println("Got schedule, UB: $ub")
+println(iterations)
