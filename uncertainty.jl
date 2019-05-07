@@ -8,44 +8,11 @@ function firstUncertainty()
             for c in 1:C
                 for i in 1:I
                     mi, ma = minVals[d,t,c,i], maxVals[d,t,c,i]
-                    #a[d,t,c,i] = Int64(floor((mi + ma)/2))
                     if ma > 0
-                        a[d,t,c,i] = 55#Int64(floor((mi + ma)/2))
+                        a[d,t,c,i] = 55
                     end
                 end
             end
-        end
-    end
-    for d in 1:D
-        if sum(a[d,t,c,i] for t=1:T, c=1:C, i=1:I) < dailyMin[d]
-             for t in 1:T
-                 for c in 1:C
-                     for i in 1:I
-                         a[d,t,c,i] = maxVals[d,t,c,i]
-                     end
-                 end
-             end
-        end
-    end
-    if sum(a[d,t,c,i] for d=1:D, t=1:T, c=1:C, i=1:I) < minWeekly
-        diff = minWeekly - sum(a[d,t,c,i] for d=1:D, t=1:T, c=1:C, i=1:I)
-        while diff > 0
-            d = rand(1:D)
-            t = rand(1:T)
-            c = rand(1:C)
-            i = rand(1:I)
-            add = maxVals[d,t,c,i] - a[d,t,c,i]
-            a[d,t,c,i] = a[d,t,c,i] + add
-            diff = diff - add
-        end
-    end
-    for k in 1:2000
-        d = rand(1:D)
-        t = rand(1:T)
-        c = rand(1:C)
-        i = rand(1:I)
-        if a[d,t,c,i] > 0
-            a[d,t,c,i] = 55
         end
     end
     return a
@@ -108,7 +75,8 @@ function calcRanges()
             end
         end
     end
-    uDaily = readtable("Data/output/staticUDaily.csv", header=true, makefactors=true)
+    #uDaily = readtable("Data/output/staticUDaily.csv", header=true, makefactors=true)
+    uDaily = readtable("Data/output/SARIMAdailyU.csv", header=true, makefactors=true)
     minWeekly, maxWeekly = uDaily[1,:MinVal], uDaily[1,:MaxVal]
     dailyMin = []
     dailyMax = []
