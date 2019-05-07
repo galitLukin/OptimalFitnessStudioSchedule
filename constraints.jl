@@ -142,4 +142,12 @@ function instuctorFairness(model, x)
     for i in 1:I
         @constraint(model, sum(x[d,t,c,i] for d in 1:D, t in 1:T, c in 1:C) <= 10)
     end
+    # no instructor can teach more the same class more than once a day
+    for d in 1:D
+        for i in 1:I
+            for c in 1:4
+                @constraint(model, sum(x[d,t,c,i] for t in 1:T) <= 1)
+            end
+        end
+    end
 end
