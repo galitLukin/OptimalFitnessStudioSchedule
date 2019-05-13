@@ -3,59 +3,12 @@ import datetime
 
 import cleaning
 import mapping
+import rankings
 
 D = 7
 T = 28
 C = 8
 I = 18
-
-def buildFirstUset(attendance):
-    #get the last week's schedule
-    lastWeek = '2019-04-22 00:00:00'
-    lastWeek = datetime.datetime.strptime(lastWeek, '%Y-%m-%d %H:%M:%S')
-    lastWeekAttendance = attendance.loc[attendance['Date'] >= lastWeek]
-
-    ########make feasible
-    lastWeekAttendance.at[914,'Description'] = "HOT26"
-    lastWeekAttendance.at[914,'Staff'] = "SERRANO,JIMMY"
-    lastWeekAttendance.at[919,'Staff'] = "LAMBERT,LUCAS"
-    lastWeekAttendance.at[922,'Description'] = "HOT26"
-    lastWeekAttendance.at[933,'Description'] = "HOT26"
-    lastWeekAttendance.at[940,'Description'] = "INFERNOHOTPILATES"
-    lastWeekAttendance.at[940,'Staff'] = "MCGRATH,SHARON"
-    lastWeekAttendance.at[944,'Description'] = "INFERNOHOTPILATES"
-    lastWeekAttendance.at[944,'Staff'] = "CATES,SHELLEY"
-    lastWeekAttendance.at[946,'Description'] = "HOT26"
-    lastWeekAttendance.at[946,'Staff'] = "MONROE,KYLAH"
-    ##########
-
-    lastWeekAttendance.to_csv('../Data/processed/attendanceLastWeek.csv')
-
-    attendance.Staff = attendance.Staff.apply(lambda x : cleaning.instructors.index(x) + 1)
-    attendance.Description = attendance.Description.apply(lambda x : cleaning.classes.index(x) + 1)
-    attendance.WeekDay = attendance.WeekDay.apply(lambda x : cleaning.weekDays.index(x) + 1)
-    timeSlots = cleaning.timeSlots()
-    attendance.StartTime = attendance.StartTime.apply(lambda x : timeSlots.index((x.hour, x.minute)) + 1)
-
-    lastWeek = '2019-04-22 00:00:00'
-    lastWeek = datetime.datetime.strptime(lastWeek, '%Y-%m-%d %H:%M:%S')
-    lastWeekAttendance = attendance.loc[attendance['Date'] >= lastWeek]
-
-    ########make feasible
-    lastWeekAttendance.at[914,'Description'] = 1
-    lastWeekAttendance.at[914,'Staff'] = 15
-    lastWeekAttendance.at[919,'Staff'] = 8
-    lastWeekAttendance.at[922,'Description'] = 1
-    lastWeekAttendance.at[933,'Description'] = 1
-    lastWeekAttendance.at[940,'Description'] = 5
-    lastWeekAttendance.at[940,'Staff'] = 11
-    lastWeekAttendance.at[944,'Description'] = 5
-    lastWeekAttendance.at[944,'Staff'] = 4
-    lastWeekAttendance.at[946,'Description'] = 1
-    lastWeekAttendance.at[946,'Staff'] = 12
-    #######
-
-    lastWeekAttendance.to_csv('../Data/output/attendanceLastWeekIndex.csv', index = False)
 
 def q1(x):
     return x.quantile(0.25)
@@ -79,8 +32,6 @@ def buildRanges(attendance):
     CI = attendance.groupby(['Description','Staff'], as_index=False).agg(f)
     #range per day
     Daily = attendance.groupby(['WeekDay'], as_index=False).agg(f)
-    #weekly Arrivals
-    WEEK = pd.read_csv('../Data/processed/WEEKdemand.csv')
 
     DTCI.columns = ["_".join(x) for x in DTCI.columns.ravel()]
     DT.columns = ["_".join(x) for x in DT.columns.ravel()]
@@ -93,41 +44,45 @@ def buildRanges(attendance):
     CI = mapping.mapMissingCI(CI)
 
     cols = ['MinVal','MaxVal']
-    uDaily = pd.DataFrame(columns=cols)
-    uDaily.at['Weekly',:] = [min(WEEK.Arrivals), max(WEEK.Arrivals)]
-    for d in range(1,D+1):
-        cell = Daily.loc[(Daily.WeekDay_ == d), :]
-        cell = cell.reset_index(drop=True)
-        uDaily.at['D_{}'.format(d),'MinVal'] = int(cell.Arrivals_q2[0])
-        uDaily.at['D_{}'.format(d),'MaxVal'] = int(cell.Arrivals_q4[0])
-    uDaily.to_csv('../Data/output/staticUDaily.csv', index = False)
+    # uDaily = pd.DataFrame(columns=cols)
+    # uDaily.at['Weekly',:] = [min(WEEK.Arrivals), max(WEEK.Arrivals)]
+    # for d in range(1,D+1):
+    #     cell = Daily.loc[(Daily.WeekDay_ == d), :]
+    #     cell = cell.reset_index(drop=True)
+    #     uDaily.at['D_{}'.format(d),'MinVal'] = int(cell.Arrivals_q2[0])
+    #     uDaily.at['D_{}'.format(d),'MaxVal'] = int(cell.Arrivals_q4[0])
+    # uDaily.to_csv('../Data/output/staticUDaily.csv', index = False)
+    category1 = pd.read_csv('../Data/processed/category1.csv')
+    category2 = pd.read_csv('../Data/processed/category2.csv')
     cols = []
     for k in range(1,19):
         cols.append('I_{}'.format(k))
-    uMin = pd.DataFrame(columns=cols)
-    uMax = pd.DataFrame(columns=cols)
+    u = pd.DataFrame(columns=cols)
     for d in range(1,D+1):
         print(d)
         for t in range(1,T+1):
+            print(t)
             for c in range(1,C+1):
                 for i in range(1,I+1):
+                    s = rankings.getPoints(d,t,c,i)
                     cell = DTCI.loc[(DTCI.WeekDay_ == d) & (DTCI.StartTime_ == t) & (DTCI.Description_ == c) & (DTCI.Staff_ == i), :]
                     if cell.empty:
                         dtcell = DT.loc[(DT.WeekDay_ == d) & (DT.StartTime_ == t), :]
                         cicell = CI.loc[(CI.Description_ == c) & (CI.Staff_ == i), :]
-                        if len(cicell)>0 and len(dtcell)>0:
-                            dtcell = dtcell.reset_index(drop=True)
-                            cicell = cicell.reset_index(drop=True)
-                            uMin.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(max(dtcell.Arrivals_q2[0], cicell.Arrivals_q2[0]))
-                            uMax.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(min(dtcell.Arrivals_q4[0], cicell.Arrivals_q4[0]))
-                        else:
+                        dtcell = dtcell.reset_index(drop=True)
+                        cicell = cicell.reset_index(drop=True)
+                        if cicell.Arrivals_q2[0] == 0:
                             # teacher does not teach class
-                            uMin.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = 0
-                            uMax.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = 0
+                            u.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = 0
+                        else:
+                            u.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(max(dtcell.Arrivals_q2[0], cicell.Arrivals_q2[0])) + s
                     else:
-                        cell = cell.reset_index(drop=True)
-                        uMin.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(cell.Arrivals_q2[0])
-                        uMax.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(cell.Arrivals_q4[0])
+                        if len(category1.loc[(category1.WeekDay == d) & (category1.StartTime == t) & (category1.Description == c) & (category1.Staff == i), :]) > 0:
+                            u.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = 23 + s
+                        elif len(category2.loc[(category2.WeekDay == d) & (category2.StartTime == t) & (category2.Description == c) & (category2.Staff == i), :]) > 0:
+                            u.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = 10 + s
+                        else:
+                            cell = cell.reset_index(drop=True)
+                            u.at['DTC_{}_{}_{}'.format(d,t,c),'I_{}'.format(i)] = int(cell.Arrivals_q2[0]) + s
 
-    uMin.to_csv('../Data/output/staticUMin.csv', index = False)
-    uMax.to_csv('../Data/output/staticUMax.csv', index = False)
+    u.to_csv('../Data/output/U.csv', index = False)

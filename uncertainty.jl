@@ -2,13 +2,13 @@ using DataFrames, JuMP
 
 function firstUncertainty()
     minVals, maxVals, minWeekly, maxWeekly, dailyMin, dailyMax = calcRanges()
-    a = zeros(Int64, D,T,C,I)
+    a = zeros(Float64, D,T,C,I)
     for d in 1:D
         for t in 1:T
             for c in 1:C
                 for i in 1:I
                     mi, ma = minVals[d,t,c,i], maxVals[d,t,c,i]
-                    if ma > 0
+                    if mi > 0
                         a[d,t,c,i] = 55
                     end
                 end
@@ -60,29 +60,36 @@ function wcArrivals(obj, x, minVals, maxVals, minWeekly, maxWeekly, dailyMin, da
 end
 
 function calcRanges()
-    uMin = readtable("Data/output/staticUMin.csv", header=true, makefactors=true)
-    uMax = readtable("Data/output/staticUMin.csv", header=true, makefactors=true)
-    minVals = zeros(Int64, D,T,C,I)
-    maxVals = zeros(Int64, D,T,C,I)
+    uDaily = readtable("Data/output/SARIMAdailyU.csv", header=true, makefactors=true)
+    minWeekly, maxWeekly = uDaily[8,:MinVal], uDaily[8,:MaxVal]
+    avgWeekly = (minWeekly + maxWeekly)/2
+    dailyMin = []
+    dailyMax = []
+    for i=1:7
+         push!(dailyMin, uDaily[i,:MinVal])
+         push!(dailyMax, uDaily[i,:MaxVal])
+    end
+    u = readtable("Data/output/U3.csv", header=true, makefactors=true)
+    ci = readtable("Data/output/ci.csv", header=true, makefactors=true)
+    minVals = zeros(Float64, D,T,C,I)
+    maxVals = zeros(Float64, D,T,C,I)
     for d in 1:D
         for t in 1:T
             for c in 1:C
                 for i in 1:I
                     row = (d-1)*T*C + (t-1)*C + c
-                    minVals[d,t,c,i] = uMin[row,i]
-                    maxVals[d,t,c,i] = uMax[row,i]
+                    minVals[d,t,c,i] = u[row,i] * dailyMin[d]
+                    maxVals[d,t,c,i] = u[row,i] * dailyMax[d]
+                    if maxVals[d,t,c,i] == 0
+                        classInstructor = ci[(ci[:Description] .== c) & (ci[:Staff] .== i),:]
+                        if nrow(classInstructor) > 0
+                            minVals[d,t,c,i] = sum(classInstructor[:,:avgArrivals]) * dailyMin[d]
+                            maxVals[d,t,c,i] = sum(classInstructor[:,:avgArrivals]) * dailyMax[d]
+                        end
+                    end
                 end
             end
         end
-    end
-    #uDaily = readtable("Data/output/staticUDaily.csv", header=true, makefactors=true)
-    uDaily = readtable("Data/output/SARIMAdailyU.csv", header=true, makefactors=true)
-    minWeekly, maxWeekly = uDaily[1,:MinVal], uDaily[1,:MaxVal]
-    dailyMin = []
-    dailyMax = []
-    for i=2:8
-         push!(dailyMin, uDaily[i,:MinVal])
-         push!(dailyMax, uDaily[i,:MaxVal])
     end
     return minVals, maxVals, minWeekly, maxWeekly, dailyMin, dailyMax
 end

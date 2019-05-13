@@ -7,6 +7,7 @@ function classTypeOccurence(model, x)
         @constraint(model, sum(x[d,t,1,i] for t=1:T, i=1:I) >= 2)
         @constraint(model, sum(x[d,t,5,i] for t=1:T, i=1:I) >= 1)
     end
+    #@constraint(model, sum(x[d,t,1,i] for d=1:D, t=1:T, i=1:I) >= 9)
     @constraint(model, sum(x[d,t,2,i] for d=1:D, t=1:T, i=1:I) >= 1)
     @constraint(model, sum(x[d,t,3,i] for d=1:D, t=1:T, i=1:I) >= 1)
     @constraint(model, sum(x[d,t,3,i] for d=1:D, t=1:T, i=1:I) <= 2)
@@ -15,6 +16,7 @@ function classTypeOccurence(model, x)
     @constraint(model, sum(x[d,t,7,i] for d=1:D, t=1:T, i=1:I) >= 5)
     @constraint(model, sum(x[d,t,8,i] for d=1:D, t=1:T, i=1:I) >= 5)
 end
+
 
 # Instructor schedule constraints
 function instructorSchedule(model, x)
@@ -131,16 +133,18 @@ function studio(model, x)
     end
 end
 
-function instuctorFairness(model, x)
+function instuctorFairness(model, x, z)
+    M = 500
     # no instructor can teach more than 2 classes a day
     for d in 1:D
         for i in 1:I
             @constraint(model, sum(x[d,t,c,i] for t in 1:T, c in 1:C) <= 2)
         end
     end
-    # no instructor can teach more than 10 classes a week
     for i in 1:I
+        # no instructor can teach more than 10 classes a week
         @constraint(model, sum(x[d,t,c,i] for d in 1:D, t in 1:T, c in 1:C) <= 10)
+        @constraint(model, z[i] <= sum(x[d,t,c,i] for d in 1:D, t in 1:T, c in 1:C))
     end
     # no instructor can teach  the same class more than once a day
     for d in 1:D

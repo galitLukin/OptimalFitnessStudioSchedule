@@ -50,5 +50,9 @@ attendance.columns = ['Date', 'StartTime', 'Description', 'Staff', 'Arrivals', '
 attendance.Staff = attendance.Staff.apply(lambda instructor: cleaning.filterInstructors(instructor))
 attendance = attendance.loc[attendance.Staff != "Filter"]
 
-uncertainty.buildFirstUset(attendance)
+attendance.Staff = attendance.Staff.apply(lambda x : cleaning.instructors.index(x) + 1)
+attendance.Description = attendance.Description.apply(lambda x : cleaning.classes.index(x) + 1)
+attendance.WeekDay = attendance.WeekDay.apply(lambda x : cleaning.weekDays.index(x) + 1)
+timeSlots = cleaning.timeSlots()
+attendance.StartTime = attendance.StartTime.apply(lambda x : timeSlots.index((x.hour, x.minute)) + 1)
 uncertainty.buildRanges(attendance)
