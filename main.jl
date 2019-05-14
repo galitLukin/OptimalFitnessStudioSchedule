@@ -10,28 +10,36 @@ C = 8
 I = 18
 L = 10
 U = 55
-
-# A is a vector of uncertainty matrices
-allAs = []
-newAs = []
-firstA = firstUncertainty()
-push!(newAs,firstA)
-x = 0
-ub = 0
-vals = []
-while newAs != []
-    for nextA in newAs
-        push!(allAs,nextA)
+alphas = [0:0.5:6;]
+weeklyDemand, numClasses, numTeacher = [],[],[]
+for alpha in alphas
+    println(alpha)
+    # A is a vector of uncertainty matrices
+    allAs = []
+    newAs = []
+    firstA = firstUncertainty()
+    push!(newAs,firstA)
+    x = 0
+    z = 0
+    ub = 0
+    vals = []
+    while newAs != []
+        for nextA in newAs
+            push!(allAs,nextA)
+        end
+        x, z, ub = getSchedule(allAs,alpha)
+        push!(vals,ub)
+        if isnan(ub)
+            break
+        else
+            newAs = buildUncertainties(ub, x, z, alpha)
+            s1 = size(newAs,1)
+        end
     end
-    x, ub = getSchedule(allAs)
-    push!(vals,ub)
-    if isnan(ub)
-        break
-    else
-        newAs = buildUncertainties(ub,x)
-        s1 = size(newAs,1)
-    end
+    visualizeSchedule(x, alpha)
+    println(vals)
+    printDecisions(allAs[2],x)
 end
-visualizeSchedule(x)
-println(vals)
-printDecisions(allAs[2])
+println(weeklyDemand)
+println(numClasses)
+println(numTeacher)

@@ -1,6 +1,6 @@
 using DataFrames
 
-function visualizeSchedule(x)
+function visualizeSchedule(x,alpha)
     classes = ["HOT 26", "HOT 26 FLOW", "SILENT HOT 26", "HOT 26+", "INFERNO HOT PILATES", "INFERNO HOT PILATES LEVEL II", "HOT HATHA FUSION", "HOT HATHA SCULPT"]
     instructors = ["ANCIVAL, SOPHIE", "BOU-NASSIF, JASMINE", "BOUJOULIAN, RACHELLE", "CATES, SHELLEY", "EVANGELISTI, MEREDITH", "HEIRTZLER, LESLIE", "JONES, JACLYN", "LAMBERT, LUCAS", "LANSING, LUCAS", "LOVERME, KYLA", "MCGRATH, SHARON", "MONROE, KYLAH", "PHAN, STEVEN", "PIGOTT, ELLEN", "SERRANO, JIMMY", "STERN, BRIAN", "VEERAPEN, KUMAR", "WOODS, TESS"]
     instructorsPrivate = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R"]
@@ -24,13 +24,13 @@ function visualizeSchedule(x)
             end
         end
     end
-    writetable("Data/output/schedule.csv",schedule)
+    writetable("Data/output/schedule_$alpha.csv",schedule)
 end
 
 
-function printDecisions(a)
+function printDecisions(a,x)
     weekDemand = 0
-    numClasses = 0
+    classes = 0
     teachers = zeros(18)
     for d in 1:D
         demand = 0
@@ -41,7 +41,7 @@ function printDecisions(a)
                         teachers[i] = 1
                         b = a[d,t,c,i]
                         demand = demand + b
-                        numClasses = numClasses + 1
+                        classes = classes + 1
                         println("Day:$d,Time:$t,Class:$c,Instructor:$i,: $b")
                     end
                 end
@@ -50,8 +50,11 @@ function printDecisions(a)
         println("Day: $d: $demand")
         weekDemand = weekDemand + demand
     end
+    t = sum(teachers)
+    push!(weeklyDemand, weekDemand)
+    push!(numClasses, classes)
+    push!(numTeacher, t)
     println("Weekly Demand: $weekDemand")
-    println("Number of Classes: $numClasses")
-    numteachers = sum(teachers)
-    println("Number of Teachers: $numteachers")
+    println("Number of Classes: $classes")
+    println("Number of Teachers: $t")
 end

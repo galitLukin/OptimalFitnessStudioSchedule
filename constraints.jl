@@ -134,24 +134,7 @@ function studio(model, x)
 end
 
 function instuctorFairness(model, x, z)
-    M = 500
-    # no instructor can teach more than 2 classes a day
-    for d in 1:D
-        for i in 1:I
-            @constraint(model, sum(x[d,t,c,i] for t in 1:T, c in 1:C) <= 2)
-        end
-    end
     for i in 1:I
-        # no instructor can teach more than 10 classes a week
-        @constraint(model, sum(x[d,t,c,i] for d in 1:D, t in 1:T, c in 1:C) <= 10)
         @constraint(model, z[i] <= sum(x[d,t,c,i] for d in 1:D, t in 1:T, c in 1:C))
-    end
-    # no instructor can teach  the same class more than once a day
-    for d in 1:D
-        for i in 1:I
-            for c in 1:C
-                @constraint(model, sum(x[d,t,c,i] for t in 1:T) <= 1)
-            end
-        end
     end
 end

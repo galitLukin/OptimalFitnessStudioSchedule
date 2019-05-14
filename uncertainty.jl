@@ -18,24 +18,24 @@ function firstUncertainty()
     return a
 end
 
-function buildUncertainties(obj,x)
+function buildUncertainties(obj, x, z, alpha)
     minVals, maxVals, minWeekly, maxWeekly, dailyMin, dailyMax = calcRanges()
     As = []
     i = 1
-    feasible, A, objective = wcArrivals(obj, x, minVals, maxVals, minWeekly, maxWeekly, dailyMin, dailyMax)
+    feasible, A, objective = wcArrivals(obj, x, z, alpha, minVals, maxVals, minWeekly, maxWeekly, dailyMin, dailyMax)
     if ~feasible && objective >= 1
         push!(As,A)
     end
     return As
 end
 
-function wcArrivals(obj, x, minVals, maxVals, minWeekly, maxWeekly, dailyMin, dailyMax)
+function wcArrivals(obj, x, z, alpha, minVals, maxVals, minWeekly, maxWeekly, dailyMin, dailyMax)
     # solve worst case min problem - formulate WC
     wc = Model(solver=GurobiSolver(OutputFlag=0))
 
     @variable(wc, A[1:D,1:T,1:C,1:I]>=0)
 
-    @objective(wc, Max, obj - sum(A[d,t,c,i]*x[d,t,c,i] for d=1:D, t=1:T, c=1:C, i=1:I))
+    @objective(wc, Max, obj - sum(A[d,t,c,i]*x[d,t,c,i] for d=1:D, t=1:T, c=1:C, i=1:I) - alpha * sum(z[i] for i=1:I))
     for d in 1:D
         for t in 1:T
             for c in 1:C
@@ -86,7 +86,7 @@ function calcRanges()
                         classInstructor = ci[(ci[:Description] .== c) & (ci[:Staff] .== i),:]
                         dayTime = dt[(dt[:WeekDay] .== d) & (dt[:StartTime] .== t),:]
                         if (nrow(classInstructor) > 0)
-                            val = (1.5*sum(classInstructor[:,:avgArrivals]) + sum(dayTime[:,:avgArrivals]))/2.5
+                            val = (sum(classInstructor[:,:avgArrivals]) + sum(dayTime[:,:avgArrivals]))/2.0
                             minVals[d,t,c,i] = val * dailyMin[d]
                             maxVals[d,t,c,i] = val * dailyMax[d]
                         else
