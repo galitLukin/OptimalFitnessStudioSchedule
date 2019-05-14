@@ -33,6 +33,5 @@ while newAs != []
     end
 end
 visualizeSchedule(x)
-println(iterations)
 println(vals)
 printDecisions(allAs[2])

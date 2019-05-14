@@ -21,38 +21,16 @@ attendance = pd.read_csv('../Data/predict/attendanceGrouped.csv')
 #filter old instructors
 attendance.Staff = attendance.Staff.apply(lambda instructor: cleaning.filterInstructors(instructor))
 attendance = attendance.loc[attendance.Staff != "Filter"]
-
-attendance.at[1010,'Client ID'] = 82
-attendance.at[1010,'Date'] = '2019-04-29'
-attendance.at[1011,'Client ID'] = 105
-attendance.at[1011,'Date'] = '2019-04-30'
-attendance.at[1012,'Client ID'] = 109
-attendance.at[1012,'Date'] = '2019-05-01'
-attendance.at[1013,'Client ID'] = 73
-attendance.at[1013,'Date'] = '2019-05-02'
-attendance.at[1014,'Client ID'] = 111
-attendance.at[1014,'Date'] = '2019-05-03'
-attendance.at[1015,'Client ID'] = 53
-attendance.at[1015,'Date'] = '2019-05-04'
-attendance.at[1016,'Client ID'] = 113
-attendance.at[1016,'Date'] = '2019-05-05'
+y_truth = [82,105,109,73,111,53,113]
+test_week = ['2019-04-29', '2019-04-30', '2019-05-01', '2019-05-02', '2019-05-03', '2019-05-04', '2019-05-05']
+start = 1010
+for k in range(len(y_truth)):
+    attendance.at[start + k,'Client ID'] = y_truth[k]
+    attendance.at[start + k,'Date'] = test_week[k]
 
 attendance.columns = ['Date', 'StartTime', 'Description', 'Staff', 'ClientID']
-# #attendance['Date'] = pd.to_datetime(attendance['Date'])
-# attendance['StartTime'] = pd.to_datetime(attendance['StartTime'])
-# attendance['WeekDay'] = attendance.Date.apply(lambda x: x.strftime("%A"))
-
-
-# attendance.Staff = attendance.Staff.apply(lambda x : cleaning.instructors.index(x) + 1)
-# attendance.Description = attendance.Description.apply(lambda x : cleaning.classes.index(x) + 1)
-# attendance.WeekDay = attendance.WeekDay.apply(lambda x : cleaning.weekDays.index(x) + 1)
-# attendance.StartTime = attendance.StartTime.apply(lambda x : int(((x.hour + x.minute/60.0) - 6)*2+1))
-#
 daily = attendance.groupby('Date')['ClientID'].sum()
-# print(daily)
 
-print(len(daily))
-#
 # daily.plot()
 # plt.show()
 p = d = q = range(0, 2)
@@ -96,21 +74,17 @@ plt.legend()
 plt.show()
 
 y_forecasted = pred.predicted_mean
-y_truth = [82,105,109,73,111,53,113]
 mse = ((y_forecasted - y_truth) ** 2).mean()
 print('The Mean Squared Error of our forecasts is {}'.format(round(mse, 2)))
 print('The Root Mean Squared Error of our forecasts is {}'.format(round(np.sqrt(mse), 2)))
 
-
-# #print(pred.predicted_mean)
-# print(pred_ci)
-# data = pd.DataFrame(columns = ['MinVal','MaxVal'])
-# i = 0
-# s = [0,0]
-# for index, row in pred_ci.iterrows():
-#     data.at[i,:] = [row['lower ClientID'], row['upper ClientID']]
-#     i = i + 1
-#     s[0] = s[0] + row['lower ClientID']
-#     s[1] = s[1] + row['upper ClientID']
-# data.at[i,:] = [s[0], s[1]]
-# data.to_csv('../Data/output/SARIMAdailyU.csv', index = False)
+data = pd.DataFrame(columns = ['MinVal','MaxVal'])
+i = 0
+s = [0,0]
+for index, row in pred_ci.iterrows():
+    data.at[i,:] = [row['lower ClientID'], row['upper ClientID']]
+    i = i + 1
+    s[0] = s[0] + row['lower ClientID']
+    s[1] = s[1] + row['upper ClientID']
+data.at[i,:] = [s[0], s[1]]
+data.to_csv('../Data/output/SARIMAdailyU.csv', index = False)

@@ -1,7 +1,7 @@
 import pandas as pd
 import datetime
 from datetime import datetime as dt
-
+import glob
 import matplotlib.pyplot as plt
 
 classDataMapOld = {
@@ -48,39 +48,6 @@ def filterInstructors(instructor):
         return instructor
     return "Filter"
 
-
-def removeOutlierWeeks(perDate):
-    demand = perDate['Client ID'].tolist()
-    plt.hist(demand, bins=10)
-    plt.title("Histogram of Demand")
-    #plt.show()
-    perDate['Date'] = pd.to_datetime(perDate['Date'])
-    gr = perDate.groupby(pd.Grouper(key='Date',freq='W-MON'))
-    weeks = []
-    weekDemand = []
-    first = datetime.date(2018,10,7)
-    first = '2018-10-01 00:00:00'
-    first = datetime.datetime.strptime(first, '%Y-%m-%d %H:%M:%S')
-    christmas1 = '2018-12-24 00:00:00'
-    christmas1 = datetime.datetime.strptime(christmas1, '%Y-%m-%d %H:%M:%S')
-    christmas2 = '2018-12-31 00:00:00'
-    christmas2 = datetime.datetime.strptime(christmas2, '%Y-%m-%d %H:%M:%S')
-    for name, group in gr:
-        #remove first week of studio and last week of 2018 due to christmas
-        if name == first or name == christmas1 or name == christmas2:
-            for index, row in group.iterrows():
-                perDate = perDate.loc[perDate['Date'] != row['Date']]
-        else:
-            weeks.append(name)
-            weekDemand.append(sum(group['Client ID'].tolist()))
-    plt.bar(weeks, weekDemand, align='center', alpha=0.5)
-    d = {'Week' : weeks, 'Arrivals' : weekDemand}
-    WEEK = pd.DataFrame(data=d)
-    WEEK.to_csv('../Data/processed/WEEKdemand.csv', index = False)
-    #plt.show()
-    return perDate
-
-
 def timeSlots():
     start = '06:00:00'
     prev = datetime.datetime.strptime(start, '%H:%M:%S')
@@ -91,35 +58,66 @@ def timeSlots():
         prev = t
     return times
 
-
-def fillTimeSlots(u,T):
-    #Fill in missing timeSlots
-    pastSlots = T.StartTime_.tolist()
-    pastMax = T.Arrivals_q4.tolist()
-    pastMin = T.Arrivals_q2.tolist()
-    for i in range(1,29):
-        if i in pastSlots:
-            ind = pastSlots.index(i)
-            u.at['Time{}'.format(i),:] = [pastMin[ind], pastMax[ind]]
-            continue
-        prev, next = 1, 1
-        while i - prev not in pastSlots:
-            prev = prev + 1
-        ind = pastSlots.index(i - prev)
-        prev = pastSlots[ind]
-        prevMax = pastMax[ind]
-        prevMin = pastMin[ind]
-        while i + next not in pastSlots and i+next<=28:
-            next = next + 1
-        if i + next < 28:
-            ind = pastSlots.index(i + next)
-            next = pastSlots[ind]
-            nextMax = pastMax[ind]
-            nextMin = pastMin[ind]
-            ma = ( prev * nextMax + next * prevMax ) / ( prev + next )
-            mi = ( prev * nextMin + next * prevMin ) / ( prev + next )
-        else:
-            mi = prevMin
-            ma = prevMax
-        u.at['Time{}'.format(i),:] = [mi, ma]
+def fillTimeSlots(dt, d, t):
+    day = dt.loc[dt.WeekDay == d]
+    pastSlots = day.StartTime.tolist()
+    arrivals = day.avgArrivals.tolist()
+    prev, next = 1, 1
+    while t - prev not in pastSlots and t - prev >= 0:
+        prev = prev + 1
+    while t + next not in pastSlots and t + next <= 29:
+        next = next + 1
+    if t - prev <= 0 and t + next >= 29:
+        return 0
+    elif t - prev <= 0 and t + next < 29:
+        ind = pastSlots.index(t + next)
+        return arrivals[ind]
+    elif t - prev > 0 and t + next >= 29:
+        ind = pastSlots.index(t - prev)
+        return arrivals[ind]
+    else:
+        pind = pastSlots.index(t - prev)
+        nind = pastSlots.index(t + next)
+        nextArrivals = arrivals[nind]
+        prevArriavls = arrivals[pind]
+        return ( prev * nextArrivals + next * prevArriavls ) / ( prev + next )
     return u
+
+
+def filterandGroup():
+        attendanceList = []
+        files = glob.glob('../Data/raw/' + "/*.xlsx")
+
+        for f in files:
+            temp = pd.read_excel(f)
+            temp = temp.loc[:,['Date', 'Start time', 'Description', 'Staff', 'Client ID', 'Status']]
+            attendanceList.append(temp)
+
+        attendance = pd.concat(attendanceList)
+        attendance = stripSpaces(attendance)
+
+        #take only users that arrived
+        attendance = attendance.loc[(attendance['Status'] == 'Signed in') | (attendance['Status'] == 'Reserved')]
+        attendance = attendance.loc[:,['Date', 'Start time', 'Description', 'Staff', 'Client ID']]
+
+        #filter old instructors
+        attendance.Staff = attendance.Staff.apply(lambda instructor: filterInstructors(instructor))
+        attendance = attendance.loc[attendance.Staff != "Filter"]
+
+        #attendance per day per class
+        perDate = attendance.loc[:,['Date','Start time','Client ID']]
+        perDate = perDate.groupby(['Date','Start time']).count().reset_index()
+        perDate = perDate.groupby('Date').sum().reset_index()
+
+        #take only relevant dates
+        allDates = perDate.loc[:,'Date'].to_frame()
+        attendance = pd.merge(attendance, allDates, on = 'Date', how = 'inner')
+
+        #map classes and filter those that don't match
+        attendance.Description = attendance.Description.apply(lambda c: currectClasses(c))
+        attendance = attendance.loc[attendance.Description != "Filter"]
+
+        # group clients per class
+        attendance = attendance.groupby(['Date','Start time','Description','Staff']).count().reset_index()
+        attendance.to_csv('../Data/output/attendanceGrouped.csv', index = False)
+        return attendance

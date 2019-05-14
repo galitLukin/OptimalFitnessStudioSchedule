@@ -69,22 +69,29 @@ function calcRanges()
          push!(dailyMin, uDaily[i,:MinVal])
          push!(dailyMax, uDaily[i,:MaxVal])
     end
-    u = readtable("Data/output/U3.csv", header=true, makefactors=true)
     ci = readtable("Data/output/ci.csv", header=true, makefactors=true)
+    dt = readtable("Data/output/dt.csv", header=true, makefactors=true)
+    dtci = readtable("Data/output/dtci.csv", header=true, makefactors=true)
     minVals = zeros(Float64, D,T,C,I)
     maxVals = zeros(Float64, D,T,C,I)
     for d in 1:D
         for t in 1:T
             for c in 1:C
                 for i in 1:I
-                    row = (d-1)*T*C + (t-1)*C + c
-                    minVals[d,t,c,i] = u[row,i] * dailyMin[d]
-                    maxVals[d,t,c,i] = u[row,i] * dailyMax[d]
-                    if maxVals[d,t,c,i] == 0
+                    allComb = dtci[(dtci[:WeekDay] .== d) & (dtci[:StartTime] .== t) & (dtci[:Description] .== c) & (dtci[:Staff] .== i),:]
+                    if nrow(allComb) > 0
+                        minVals[d,t,c,i] = sum(allComb[:,:avgArrivals]) * dailyMin[d]
+                        maxVals[d,t,c,i] = sum(allComb[:,:avgArrivals]) * dailyMax[d]
+                    else
                         classInstructor = ci[(ci[:Description] .== c) & (ci[:Staff] .== i),:]
-                        if nrow(classInstructor) > 0
-                            minVals[d,t,c,i] = sum(classInstructor[:,:avgArrivals]) * dailyMin[d]
-                            maxVals[d,t,c,i] = sum(classInstructor[:,:avgArrivals]) * dailyMax[d]
+                        dayTime = dt[(dt[:WeekDay] .== d) & (dt[:StartTime] .== t),:]
+                        if (nrow(classInstructor) > 0)
+                            val = (1.5*sum(classInstructor[:,:avgArrivals]) + sum(dayTime[:,:avgArrivals]))/2.5
+                            minVals[d,t,c,i] = val * dailyMin[d]
+                            maxVals[d,t,c,i] = val * dailyMax[d]
+                        else
+                            minVals[d,t,c,i] = sum(dayTime[:,:avgArrivals]) * dailyMin[d]
+                            maxVals[d,t,c,i] = sum(dayTime[:,:avgArrivals]) * dailyMax[d]
                         end
                     end
                 end
