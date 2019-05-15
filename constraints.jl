@@ -1,4 +1,4 @@
-using JuMP, JuMPeR, Gurobi, DataFrames
+using JuMP, Gurobi, DataFrames
 using MLDataUtils
 
 # How many class types per day/week

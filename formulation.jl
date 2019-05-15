@@ -1,4 +1,4 @@
-using JuMP, JuMPeR, Gurobi
+using JuMP, Gurobi
 
 include("constraints.jl")
 
