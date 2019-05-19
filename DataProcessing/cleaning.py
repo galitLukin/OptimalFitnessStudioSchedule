@@ -59,30 +59,30 @@ def timeSlots():
     return times
 
 def fillTimeSlots(dt, d, t):
-    day = dt.loc[dt.WeekDay == d]
-    pastSlots = day.StartTime.tolist()
-    arrivals = day.avgArrivals.tolist()
-    prev, next = 1, 1
-    while t - prev not in pastSlots and t - prev >= 0:
-        prev = prev + 1
-    while t + next not in pastSlots and t + next <= 29:
-        next = next + 1
-    if t - prev <= 0 and t + next >= 29:
-        return 0
-    elif t - prev <= 0 and t + next < 29:
-        ind = pastSlots.index(t + next)
-        return arrivals[ind]
-    elif t - prev > 0 and t + next >= 29:
-        ind = pastSlots.index(t - prev)
-        return arrivals[ind]
+    if d <= 5:
+        days = dt.loc[dt.WeekDay <= 5]
     else:
-        pind = pastSlots.index(t - prev)
-        nind = pastSlots.index(t + next)
-        nextArrivals = arrivals[nind]
-        prevArriavls = arrivals[pind]
-        return ( prev * nextArrivals + next * prevArriavls ) / ( prev + next )
-    return u
+        days = dt.loc[dt.WeekDay > 5]
+    pastSlots = days.loc[ (days.StartTime <= t + 1) & (days.StartTime >= t - 1)]
+    if pastSlots.empty:
+        pastSlots = days.loc[ (days.StartTime <= t + 2) & (days.StartTime >= t - 2)]
+    if pastSlots.empty:
+        return 0
+    else:
+        return float(sum(pastSlots.avgArrivals))/len(pastSlots.avgArrivals)
+    return 0
 
+def fillMissing(dtci, t, c, i):
+    days = dtci.loc[(dtci.Staff == i) & (dtci.Description == c)]
+    pastSlots = days.loc[ (days.StartTime <= t + 1) & (days.StartTime >= t - 1)]
+    if pastSlots.empty:
+        pastSlots = days.loc[ (days.StartTime <= t + 2) & (days.StartTime >= t - 2)]
+    if pastSlots.empty:
+        return 0
+    else:
+        return float(sum(pastSlots.avgArrivals))/len(pastSlots.avgArrivals)
+    return 0
+    
 
 def filterandGroup():
         attendanceList = []

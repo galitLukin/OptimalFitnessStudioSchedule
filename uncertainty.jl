@@ -79,21 +79,33 @@ function calcRanges()
             for c in 1:C
                 for i in 1:I
                     allComb = dtci[(dtci[:WeekDay] .== d) & (dtci[:StartTime] .== t) & (dtci[:Description] .== c) & (dtci[:Staff] .== i),:]
-                    if nrow(allComb) > 0
-                        minVals[d,t,c,i] = sum(allComb[:,:avgArrivals]) * dailyMin[d]
-                        maxVals[d,t,c,i] = sum(allComb[:,:avgArrivals]) * dailyMax[d]
-                    else
-                        classInstructor = ci[(ci[:Description] .== c) & (ci[:Staff] .== i),:]
-                        dayTime = dt[(dt[:WeekDay] .== d) & (dt[:StartTime] .== t),:]
-                        if (nrow(classInstructor) > 0)
-                            val = (sum(classInstructor[:,:avgArrivals]) + sum(dayTime[:,:avgArrivals]))/2.0
-                            minVals[d,t,c,i] = val * dailyMin[d]
-                            maxVals[d,t,c,i] = val * dailyMax[d]
-                        else
-                            minVals[d,t,c,i] = sum(dayTime[:,:avgArrivals]) * dailyMin[d]
-                            maxVals[d,t,c,i] = sum(dayTime[:,:avgArrivals]) * dailyMax[d]
-                        end
-                    end
+                    #if nrow(allComb) > 0
+                    minVals[d,t,c,i] = round(sum(allComb[:,:avgArrivals]) * dailyMin[d])
+                    maxVals[d,t,c,i] = round(sum(allComb[:,:avgArrivals]) * dailyMax[d])
+                    # if (c == 2) & (minVals[d,t,c,i] >= 10)
+                    #     println("$d,$t,$i")
+                    #     println(minVals[d,t,c,i])
+                    #     println(maxVals[d,t,c,i])
+                    # end
+                    #     if minVals[d,t,c,i] > maxVals[d,t,c,i]
+                    #         maxVals[d,t,c,i] = minVals[d,t,c,i]
+                    #     end
+                    # else
+                    #     classInstructor = ci[(ci[:Description] .== c) & (ci[:Staff] .== i),:]
+                    #     dayTime = dt[(dt[:WeekDay] .== d) & (dt[:StartTime] .== t),:]
+                    #     if (nrow(classInstructor) > 0) & (sum(dayTime[:,:avgArrivals]) > 0)
+                    #         val = (sum(classInstructor[:,:avgArrivals]) + 2*sum(dayTime[:,:avgArrivals]))/3.0
+                    #         minVals[d,t,c,i] = val * dailyMin[d]
+                    #         maxVals[d,t,c,i] = val * dailyMax[d]
+                    #     elseif nrow(classInstructor) > 0
+                    #         val = sum(classInstructor[:,:avgArrivals])
+                    #         minVals[d,t,c,i] = val * dailyMin[d]
+                    #         maxVals[d,t,c,i] = val * dailyMax[d]
+                    #     else
+                    #         minVals[d,t,c,i] = sum(dayTime[:,:avgArrivals]) * dailyMin[d]
+                    #         maxVals[d,t,c,i] = sum(dayTime[:,:avgArrivals]) * dailyMax[d]
+                    #     end
+                    # end
                 end
             end
         end

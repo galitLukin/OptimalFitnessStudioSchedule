@@ -8,38 +8,23 @@ D = 7
 T = 28
 C = 8
 I = 18
-L = 10
+L = 9
 U = 55
-alphas = [0:0.5:6;]
-weeklyDemand, numClasses, numTeacher = [],[],[]
+alphas = [0:6;]
+betas = [0:2:10;]
+weeklyDemandmin, weeklyDemandmax, numClasses, numTeacher = [],[],[], []
 for alpha in alphas
     println(alpha)
-    # A is a vector of uncertainty matrices
-    allAs = []
-    newAs = []
-    firstA = firstUncertainty()
-    push!(newAs,firstA)
-    x = 0
-    z = 0
-    ub = 0
-    vals = []
-    while newAs != []
-        for nextA in newAs
-            push!(allAs,nextA)
-        end
-        x, z, ub = getSchedule(allAs,alpha)
-        push!(vals,ub)
-        if isnan(ub)
-            break
-        else
-            newAs = buildUncertainties(ub, x, z, alpha)
-            s1 = size(newAs,1)
-        end
+    for beta in betas
+        minVals, maxVals, minWeekly, maxWeekly, dailyMin, dailyMax = calcRanges()
+        x, z, ub = getSchedule(minVals, maxVals, minWeekly, dailyMin, alpha,beta)
+        visualizeSchedule(x, alpha, beta)
+        printDecisions(minVals,maxVals,x)
     end
-    visualizeSchedule(x, alpha)
-    println(vals)
-    printDecisions(allAs[2],x)
 end
-println(weeklyDemand)
+println(alphas)
+println(betas)
+println(weeklyDemandmin)
+println(weeklyDemandmax)
 println(numClasses)
 println(numTeacher)

@@ -16,11 +16,8 @@ T = 28
 C = 8
 I = 18
 
-attendance = pd.read_csv('../Data/predict/attendanceGrouped.csv')
-
+attendance = cleaning.filterandGroup()
 #filter old instructors
-attendance.Staff = attendance.Staff.apply(lambda instructor: cleaning.filterInstructors(instructor))
-attendance = attendance.loc[attendance.Staff != "Filter"]
 y_truth = [82,105,109,73,111,53,113]
 test_week = ['2019-04-29', '2019-04-30', '2019-05-01', '2019-05-02', '2019-05-03', '2019-05-04', '2019-05-05']
 start = 1010
@@ -29,7 +26,15 @@ for k in range(len(y_truth)):
     attendance.at[start + k,'Date'] = test_week[k]
 
 attendance.columns = ['Date', 'StartTime', 'Description', 'Staff', 'ClientID']
-daily = attendance.groupby('Date')['ClientID'].sum()
+daily = attendance.groupby('Date')['ClientID'].sum().reset_index()
+print(len(daily))
+daily['Date'] = pd.to_datetime(daily['Date'])
+
+d = daily.Date
+from datetime import date, timedelta
+date_set = set(d[0] + timedelta(x) for x in range((d[214] - d[0]).days))
+missing = sorted(date_set - set(d))
+print(missing)
 
 # daily.plot()
 # plt.show()
@@ -52,7 +57,7 @@ seasonal_pdq = [(x[0], x[1], x[2], 7) for x in list(itertools.product(p, d, q))]
 #             continue
 # ARIMA(1, 1, 1)x(0, 1, 1, 7)7 - AIC:1560.5683622797435
 
-mod = sm.tsa.statespace.SARIMAX(daily,
+mod = sm.tsa.statespace.SARIMAX(daily.ClientID,
                                 order=(1, 1, 1),
                                 seasonal_order=(0, 1, 1, 7),
                                 enforce_stationarity=False,
@@ -63,7 +68,7 @@ pred = results.get_prediction(start=209, end=215,dynamic=False)
 results.plot_diagnostics(figsize=(16, 8))
 plt.show()
 pred_ci = pred.conf_int()
-ax = daily.plot(label='observed')
+ax = daily.ClientID.plot(label='observed')
 pred.predicted_mean.plot(ax=ax, label='One-step ahead Forecast', alpha=.7, figsize=(14, 7))
 ax.fill_between(pred_ci.index, pred_ci.iloc[:, 0], pred_ci.iloc[:, 1], color='k', alpha=.2)
 ax.set_xlabel('Date')
@@ -87,4 +92,4 @@ for index, row in pred_ci.iterrows():
     s[0] = s[0] + row['lower ClientID']
     s[1] = s[1] + row['upper ClientID']
 data.at[i,:] = [s[0], s[1]]
-data.to_csv('../Data/output/SARIMAdailyU.csv', index = False)
+#data.to_csv('../Data/output/SARIMAdailyU.csv', index = False)
