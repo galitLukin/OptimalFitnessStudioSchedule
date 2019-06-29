@@ -28,7 +28,7 @@ def main():
     dt = perDTCI.groupby(['WeekDay','Start time']).agg({'avgArrivals': [ 'mean','count']}).reset_index()
     dt.columns = ["_".join(x) for x in dt.columns.ravel()]
     dt.columns = ['WeekDay','StartTime','avgArrivals','classCount']
-    dt = dt.loc[(dt.classCount >= 5)]
+    dt = dt.loc[(dt.classCount >= 3)]
     dt = dt.loc[:,['WeekDay','StartTime','avgArrivals']]
     dt.WeekDay = dt.WeekDay.apply(lambda x: days.index(x) + 1)
     dt.StartTime = dt.StartTime.apply(lambda t: int(((t.hour + t.minute/60.0) - 6)*2+1))
@@ -56,7 +56,7 @@ def main():
     dtci = perDTCI.groupby(['WeekDay','Start time','Description','Staff']).agg({'avgArrivals': [ 'mean','count']}).reset_index()
     dtci.columns = ["_".join(x) for x in dtci.columns.ravel()]
     dtci.columns = ['WeekDay','Start time','Description','Staff','avgArrivals','classCount']
-    dtci = dtci.loc[(dtci.classCount >= 5)]
+    dtci = dtci.loc[(dtci.classCount >= 3)]
     dtci = dtci.loc[:,['WeekDay','Start time','Description','Staff','avgArrivals']]
     dtci.columns = ['WeekDay','StartTime','Description','Staff','avgArrivals']
     dtci.WeekDay = dtci.WeekDay.apply(lambda x: days.index(x) + 1)
@@ -72,7 +72,7 @@ def main():
                     if len(dtci.loc[(dtci.WeekDay == d) & (dtci.StartTime == t) &(dtci.Staff == i) & (dtci.Description == c)]) > 0:
                         continue
                     else:
-                        avgArrivals = cleaning.fillMissing(dtci, t, c, i)
+                        avgArrivals = cleaning.fillMissing(dtci, d, t, c, i)
                         row = row + 1
                         if avgArrivals > 0:
                             dtci.at[row,:] = [d,t,c,i,avgArrivals]

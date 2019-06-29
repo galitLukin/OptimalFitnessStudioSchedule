@@ -4,25 +4,27 @@ using MLDataUtils
 # How many class types per day/week
 function classTypeOccurence(model, x)
     for d in 1:D
-        @constraint(model, sum(x[d,t,1,i] for t=1:T, i=1:I) >= 1)
+        @constraint(model, sum(x[d,t,c,i] for t=1:T, c=1:4, i=1:I) >= 1)
         @constraint(model, sum(x[d,t,5,i] for t=1:T, i=1:I) >= 1)
         @constraint(model, sum(x[d,t,6,i] for t=1:T, i=1:I) <= 1)
         for c in 1:C
             @constraint(model, sum(x[d,t,c,i] for t=1:T, i=1:I) <= 2)
         end
     end
-    #@constraint(model, sum(x[d,t,1,i] for d=1:D, t=1:T, i=1:I) >= 9)
+
+    @constraint(model, sum(x[d,t,4,i] for d=6:D, t=1:T, i=1:I) >= 1)
+    @constraint(model, sum(x[d,t,1,i] for d=1:D, t=1:T, i=1:I) >= 3)
     @constraint(model, sum(x[d,t,2,i] for d=1:D, t=1:T, i=1:I) >= 1)
     @constraint(model, sum(x[d,t,2,i] for d=1:D, t=1:T, i=1:I) <= 3)
     @constraint(model, sum(x[d,t,3,i] for d=1:D, t=1:T, i=1:I) >= 1)
     @constraint(model, sum(x[d,t,3,i] for d=1:D, t=1:T, i=1:I) <= 2)
-    @constraint(model, sum(x[d,t,4,i] for d=1:D, t=1:T, i=1:I) == 1)
+    @constraint(model, sum(x[d,t,4,i] for d=1:D, t=1:T, i=1:I) >= 1)
+    @constraint(model, sum(x[d,t,4,i] for d=1:D, t=1:T, i=1:I) <= 3)
     @constraint(model, sum(x[d,t,6,i] for d=1:D, t=1:T, i=1:I) >= 2)
-    @constraint(model, sum(x[d,t,6,i] for d=1:D, t=1:T, i=1:I) <= 4)
-    @constraint(model, sum(x[d,t,7,i] for d=1:D, t=1:T, i=1:I) >= 5)
-    @constraint(model, sum(x[d,t,8,i] for d=1:D, t=1:T, i=1:I) >= 5)
-    @constraint(model, sum(x[d,t,7,i] for d=1:D, t=1:T, i=1:I) <= 10)
-    @constraint(model, sum(x[d,t,8,i] for d=1:D, t=1:T, i=1:I) <= 10)
+    @constraint(model, sum(x[d,t,6,i] for d=1:D, t=1:T, i=1:I) <= 5)
+    @constraint(model, sum(x[d,t,7,i] for d=1:D, t=1:T, i=1:I) >= 2)
+    @constraint(model, sum(x[d,t,8,i] for d=1:D, t=1:T, i=1:I) >= 4)
+    @constraint(model, sum(x[d,t,c,i] for d=1:D, t=1:T, c=1:C, i=1:I) <= 42)
 end
 
 
@@ -67,6 +69,8 @@ function instructorSpecialSchedule(model, x)
         d_ = d_ + 1
     end
     @constraint(model, sum(lucas[d] for d in 1:5) <= 1)
+    #Tess on Tuesdays
+    @constraint(model, sum(x[2,t,8,18] for t in 1:T) == 1)
 end
 
 # Instructor class type constraints
@@ -110,11 +114,11 @@ function studio(model, x)
             for i in 1:I
                 # one and half hour classes
                 for c in 1:4
-                    @constraint(model, x[d,t,c,i] + sum(x[d,t,c_,i_] for c_ in C_[1:end .!= c], i_ in I_[1:end .!= i]) + sum(x[d,t+t_,c_,i_] for t_=1:3, c_=1:C, i_=1:I) <= 1)
+                    @constraint(model, sum(x[d,t+t_,c_,i_] for t_=1:3, c_=1:C, i_=1:I) <= 1 - x[d,t,c,i])
                 end
                 # one hour classes
                 for c in 5:8
-                    @constraint(model, x[d,t,c,i] + sum(x[d,t,c_,i_] for c_ in C_[1:end .!= c], i_ in I_[1:end .!= i]) + sum(x[d,t+t_,c_,i_] for t_=1:2, c_=1:C, i_=1:I) <= 1)
+                    @constraint(model, sum(x[d,t+t_,c_,i_] for t_=1:2, c_=1:C, i_=1:I) <= 1 - x[d,t,c,i])
                 end
             end
         end
@@ -125,16 +129,16 @@ function studio(model, x)
         for t in 26:T-1
             for i in 1:I
                 for c in 1:C
-                    @constraint(model, x[d,t,c,i] + sum(x[d,t,c_,i_] for c_ in C_[1:end .!= c], i_ in I_[1:end .!= i]) + sum(x[d,t+t_,c_,i_] for t_=1:T-t ,c_=1:C, i_=1:I) <= 1)
+                    @constraint(model, sum(x[d,t+t_,c_,i_] for t_=1:T-t ,c_=1:C, i_=1:I) <= 1 - x[d,t,c,i])
                 end
             end
         end
     end
 
-    # 19:30 can one be a one hour class
+    # latest class can be at 19:00
     for d in 1:D
         for i in 1:I
-            for c in 1:4
+            for c in 1:C
                 @constraint(model, x[d,28,c,i] == 0)
             end
         end
@@ -143,11 +147,22 @@ end
 
 function instuctorFairness(model, x, z)
     for i in 1:I
-        @constraint(model, z[i] <= sum(x[d,t,c,i] for d in 1:D, t in 1:T, c in 1:C))
+        for c in 1:C
+            @constraint(model, z[i,c] <= sum(x[d,t,c,i] for d in 1:D, t in 1:T))
+        end
     end
+    #no more than two time per teacher in a day
     for i in 1:I
         for d in 1:D
             @constraint(model, sum(x[d,t,c,i] for t in 1:T, c in 1:C) <= 2)
+        end
+    end
+    #no two class teachers in a day
+    for i in 1:I
+        for c in 1:C
+            for d in 1:D
+                @constraint(model, sum(x[d,t,c,i] for t in 1:T) <= 1)
+            end
         end
     end
 end

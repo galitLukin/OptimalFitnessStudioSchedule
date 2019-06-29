@@ -60,7 +60,7 @@ function wcArrivals(obj, x, z, alpha, minVals, maxVals, minWeekly, maxWeekly, da
 end
 
 function calcRanges()
-    uDaily = readtable("Data/output/SARIMAdailyU.csv", header=true, makefactors=true)
+    uDaily = readtable("Data/output/SARIMAdailyU_output.csv", header=true, makefactors=true)
     minWeekly, maxWeekly = uDaily[8,:MinVal], uDaily[8,:MaxVal]
     avgWeekly = (minWeekly + maxWeekly)/2
     dailyMin = []
@@ -69,8 +69,8 @@ function calcRanges()
          push!(dailyMin, uDaily[i,:MinVal])
          push!(dailyMax, uDaily[i,:MaxVal])
     end
-    ci = readtable("Data/output/ci.csv", header=true, makefactors=true)
-    dt = readtable("Data/output/dt.csv", header=true, makefactors=true)
+    #ci = readtable("Data/output/ci.csv", header=true, makefactors=true)
+    #dt = readtable("Data/output/dt.csv", header=true, makefactors=true)
     dtci = readtable("Data/output/dtci.csv", header=true, makefactors=true)
     minVals = zeros(Float64, D,T,C,I)
     maxVals = zeros(Float64, D,T,C,I)
@@ -79,33 +79,8 @@ function calcRanges()
             for c in 1:C
                 for i in 1:I
                     allComb = dtci[(dtci[:WeekDay] .== d) & (dtci[:StartTime] .== t) & (dtci[:Description] .== c) & (dtci[:Staff] .== i),:]
-                    #if nrow(allComb) > 0
-                    minVals[d,t,c,i] = round(sum(allComb[:,:avgArrivals]) * dailyMin[d])
-                    maxVals[d,t,c,i] = round(sum(allComb[:,:avgArrivals]) * dailyMax[d])
-                    # if (c == 2) & (minVals[d,t,c,i] >= 10)
-                    #     println("$d,$t,$i")
-                    #     println(minVals[d,t,c,i])
-                    #     println(maxVals[d,t,c,i])
-                    # end
-                    #     if minVals[d,t,c,i] > maxVals[d,t,c,i]
-                    #         maxVals[d,t,c,i] = minVals[d,t,c,i]
-                    #     end
-                    # else
-                    #     classInstructor = ci[(ci[:Description] .== c) & (ci[:Staff] .== i),:]
-                    #     dayTime = dt[(dt[:WeekDay] .== d) & (dt[:StartTime] .== t),:]
-                    #     if (nrow(classInstructor) > 0) & (sum(dayTime[:,:avgArrivals]) > 0)
-                    #         val = (sum(classInstructor[:,:avgArrivals]) + 2*sum(dayTime[:,:avgArrivals]))/3.0
-                    #         minVals[d,t,c,i] = val * dailyMin[d]
-                    #         maxVals[d,t,c,i] = val * dailyMax[d]
-                    #     elseif nrow(classInstructor) > 0
-                    #         val = sum(classInstructor[:,:avgArrivals])
-                    #         minVals[d,t,c,i] = val * dailyMin[d]
-                    #         maxVals[d,t,c,i] = val * dailyMax[d]
-                    #     else
-                    #         minVals[d,t,c,i] = sum(dayTime[:,:avgArrivals]) * dailyMin[d]
-                    #         maxVals[d,t,c,i] = sum(dayTime[:,:avgArrivals]) * dailyMax[d]
-                    #     end
-                    # end
+                    minVals[d,t,c,i] = sum(allComb[:,:avgArrivals] * dailyMin[d])
+                    maxVals[d,t,c,i] = sum(allComb[:,:avgArrivals] * dailyMax[d])
                 end
             end
         end

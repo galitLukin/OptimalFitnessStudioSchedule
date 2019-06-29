@@ -8,10 +8,10 @@ D = 7
 T = 28
 C = 8
 I = 18
-L = 9
+L = 7
 U = 55
-alphas = [0:6;]
-betas = [0:2:10;]
+alphas = [0:4:12;]
+betas = [0:5:20;]
 weeklyDemandmin, weeklyDemandmax, numClasses, numTeacher = [],[],[], []
 for alpha in alphas
     println(alpha)

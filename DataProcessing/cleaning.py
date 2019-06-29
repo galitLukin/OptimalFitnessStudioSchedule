@@ -4,28 +4,22 @@ from datetime import datetime as dt
 import glob
 import matplotlib.pyplot as plt
 
-classDataMapOld = {
-    "HOT26" : ["HOT26", "HOT26+BACKBENDS", "HOT26FLOW", "HOT26+", "CLASSIC90", "EXPRESS60", "SILENTHOT26", "SILENT90", "SILENT60"],
-    "INFERNOHOTPILATES" : ["INFERNOHOTPILATES", "INFERNOHOTPILATESLEVELII", "CHARITYINFERNOHOTPILATES"],
-    "HOTHATHAFUSION" : ["HOTHATHAFUSION"],
-    "HOTHATHASCULPT" : ["HOTHATHASCULPT"]
-}
-
 classDataMap = {
-    "HOT26" : ["HOT26", "HOT26+BACKBENDS", "CLASSIC90", "EXPRESS60", "SILENT90", "SILENT60"],
+    "HOT26" : ["HOT26", "CLASSIC90", "EXPRESS60", "SILENT90", "SILENT60"],
     "INFERNOHOTPILATES" : ["INFERNOHOTPILATES", "CHARITYINFERNOHOTPILATES"],
-    "HOTHATHAFUSION" : ["HOTHATHAFUSION"],
-    "HOTHATHASCULPT" : ["HOTHATHASCULPT"],
+    "HOTHATHAFUSION" : ["HOTHATHAFUSION", "HHVINYASAFUSION"],
+    "HOTHATHASCULPT" : ["HOTHATHASCULPT", "HHSCULPTFLOW"],
     "HOT26FLOW" : ["HOT26FLOW"],
-    "HOT26+" : ["HOT26+"],
+    "HOT26+" : ["HOT26+", "HOT26+BACKBENDS"],
     "SILENTHOT26" : ["SILENTHOT26"],
-    "INFERNOHOTPILATESLEVELII" : ["INFERNOHOTPILATESLEVELII"]
+    "INFERNOHOTPILATESLEVELII" : ["INFERNOHOTPILATESLEVELII","INFERNOHOTPILATES+"]
 }
 
 classes = ["HOT26", "HOT26FLOW", "SILENTHOT26", "HOT26+", "INFERNOHOTPILATES", "INFERNOHOTPILATESLEVELII", "HOTHATHAFUSION", "HOTHATHASCULPT"]
+classesShort = ["HOT26", "HOT26FLOW", "SILENTHOT26", "HOT26+", "IHP", "IHP+", "HHF", "HHS"]
 instructors = ["ANCIVAL,SOPHIE", "BOU-NASSIF,JASMINE", "BOUJOULIAN,RACHELLE", "CATES,SHELLEY", "EVANGELISTI,MEREDITH", "HEIRTZLER,LESLIE", "JONES,JACLYN", "LAMBERT,LUCAS", "LANSING,LUCAS", "LOVERME,KYLA", "MCGRATH,SHARON", "MONROE,KYLAH", "PHAN,STEVEN", "PIGOTT,ELLEN", "SERRANO,JIMMY", "STERN,BRIAN", "VEERAPEN,KUMAR", "WOODS,TESS"]
 weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-
+instructorsPrivate = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R"]
 
 def stripSpaces(df):
     df['Description'] = df['Description'].str.replace(" ","")
@@ -69,20 +63,20 @@ def fillTimeSlots(dt, d, t):
     if pastSlots.empty:
         return 0
     else:
-        return float(sum(pastSlots.avgArrivals))/len(pastSlots.avgArrivals)
+        return float(sum(pastSlots.avgArrivals))/len(pastSlots.avgArrivals) - 0.005
     return 0
 
-def fillMissing(dtci, t, c, i):
+def fillMissing(dtci, d, t, c, i):
     days = dtci.loc[(dtci.Staff == i) & (dtci.Description == c)]
-    pastSlots = days.loc[ (days.StartTime <= t + 1) & (days.StartTime >= t - 1)]
+    pastSlots = days.loc[(days.StartTime <= t + 1) & (days.StartTime >= t - 1)]
     if pastSlots.empty:
         pastSlots = days.loc[ (days.StartTime <= t + 2) & (days.StartTime >= t - 2)]
     if pastSlots.empty:
         return 0
     else:
-        return float(sum(pastSlots.avgArrivals))/len(pastSlots.avgArrivals)
+        return float(sum(pastSlots.avgArrivals))/len(pastSlots.avgArrivals) - 0.005
     return 0
-    
+
 
 def filterandGroup():
         attendanceList = []
@@ -121,3 +115,5 @@ def filterandGroup():
         attendance = attendance.groupby(['Date','Start time','Description','Staff']).count().reset_index()
         attendance.to_csv('../Data/output/attendanceGrouped.csv', index = False)
         return attendance
+
+filterandGroup()
